@@ -17,8 +17,9 @@ see `data/README.md`).
   80 mV (oxidation) and 68 mV (reduction); b-values 0.60 / 0.69 measured vs 0.66 / 0.70 model.
 - **Diagnosis:** at 2C the model assigns 74 % of the voltage loss to ohmic/contact resistance; the shape of
   the measured 2C curve says the real cell has a transport loss that grows with time, which the fit could not
-  separate from resistance (see "Why 2C loses capacity" and "Next step").
-
+  separate from resistance (see "Why 2C loses capacity").
+- **v2, rests added to the fit (not an improvement):** refitting on the C/5 and C/2 curves plus the C/10, C/5 and C/2 rests, the 2C capacity error moves from +20.1 % to -16.3 %: a smaller number, but the wrong answer for the wrong reason, because the 135 Ω resistance simply pulls the whole 2C curve down (V-Q RMSE 66 to 149 mV). The model-free rest jumps give 72 Ω (after charge), yet the v2 fit moves R_contact up to 135 Ω: this model has no double-layer capacitance and one particle size, so it cannot reproduce the log-time relaxation the rests show and instead matches their mean level with a bigger ohmic drop (see "v1 vs v2").
+- **v2.1, one model change (double layer), same training data as v2:** the rests are now matched to 15 mV with R_contact 89 Ω and k identifiable, but the blind 2C capacity error is +27.1 % against +20.1 % for v1 (2C V-Q RMSE 63 against 66 mV): not an improvement, reported as it came out.
 ![Measured vs model at all four rates](figures/headline_measured_vs_model.png)
 
 *Solid: measured. Dashed: DFN. C/5 and C/2 were used for fitting; C/10 is a low-rate check; 2C is a blind prediction.*
@@ -119,14 +120,236 @@ electrolyte, so the unknown area does not affect the headline result. The headli
 diameter that gives a physically plausible coating.
 
 
+## v1 vs v2: adding the post-step rests to the fit
+
+v1 fitted only the C/5 and C/2 charge/discharge curves, which cannot separate an instantaneous ohmic drop from a
+transport loss that builds over time (k vs R_contact correlation 0.94); it fitted
+R_contact = 96.5 Ω and over-predicted the blind 2C capacity by +20.1 %. Every galvanostatic
+step ends with a 30 s rest whose first sample is logged 48 ms after the current switches off. v2 keeps the
+same model, the same three parameters and the same 10 mm disc, and adds those rests to the training residual. No 2C
+data (curves or rests) is used in either version.
+
+### Model-free check: instantaneous resistance of every rest
+
+Jump = first rest sample minus last sample under current, straight from the raw files. The first sample already
+contains whatever charge-transfer overpotential relaxed in the first 48 ms, so jump / I is an upper bound
+on the pure ohmic resistance.
+
+| Rate | Cycle | After | I (mA) | First sample (ms) | Jump (mV) | Jump / I (Ω) | 30 s relaxation (mV) | Use |
+|---|---|---|---|---|---|---|---|---|
+| C/10 | 1 | charge | 0.147 | 48 | 10.4 | 71 | 73 | fitted (v2) |
+| C/10 | 1 | discharge | 0.140 | 48 | 13.8 | 98 | 173 | fitted (v2) |
+| C/10 | 2 | charge | 0.147 | 48 | 12.3 | 84 | 70 | not fitted |
+| C/10 | 2 | discharge | 0.140 | 48 | 13.3 | 95 | 174 | not fitted |
+| C/5 | 1 | charge | 0.287 | 48 | 19.3 | 67 | 105 | fitted (v2) |
+| C/5 | 1 | discharge | 0.286 | 48 | 26.4 | 92 | 227 | fitted (v2) |
+| C/5 | 2 | charge | 0.287 | 48 | 19.8 | 69 | 105 | not fitted |
+| C/5 | 2 | discharge | 0.286 | 48 | 44.6 | 156 | 232 | not fitted |
+| C/2 | 1 | charge | 0.717 | 48 | 50.2 | 70 | 171 | fitted (v2) |
+| C/2 | 1 | discharge | 0.717 | 48 | 72.6 | 101 | 285 | fitted (v2) |
+| C/2 | 2 | charge | 0.717 | 48 | 49.2 | 69 | 172 | not fitted |
+| C/2 | 2 | discharge | 0.717 | 48 | 79.4 | 111 | 287 | not fitted |
+| 2C | 1 | charge | 2.871 | 48 | 214.6 | 75 | 300 | post-hoc only, never fitted |
+| 2C | 1 | discharge | 2.864 | 48 | 254.8 | 89 | 381 | post-hoc only, never fitted |
+| 2C | 2 | charge | 2.871 | 48 | 209.1 | 73 | 296 | post-hoc only, never fitted |
+| 2C | 2 | discharge | 2.864 | 48 | 260.6 | 91 | 382 | post-hoc only, never fitted |
+
+After charge the jump gives 72 Ω on average over C/10, C/5 and C/2 (2C, post-hoc: 74 Ω), well
+below the v1 contact resistance of 97 Ω: v1 assigned too much of the loss to resistance. After discharge the jump is
+larger (109 Ω on average) because the cut-off at 3.5 V sits on the steep end of the OCV where the exchange current
+is smallest and the particle surface relaxes fastest. The C/5 cycle-2 discharge rest (156 Ω) carries the 22 mV contact
+disturbance noted in `data/README.md`, which returns at the switch-off and so is confirmed as a contact resistance. What
+the table does not show, and the figure does, is the shape: the relaxation after the jump is close to linear in
+log(time) from 50 ms to 30 s, i.e. a distributed process, not one exponential or one sqrt(t) diffusion tail.
+
+![Measured rests](figures/v2_rests_measured.png)
+
+### v2 fit
+
+Training residual: the v1 curve residual (C/5 and C/2 cycle 1, charge and discharge, 300 points each, 1200
+points) plus the model minus measured voltage at every logged point of the six cycle-1 rests after the C/10, C/5 and
+C/2 steps (101 points), time measured from the last sample under current. Each rest residual is
+multiplied by w = sqrt(λ · N_curve / N_rest) so that the rest block carries λ times the summed squared weight of the
+curve block; the headline uses λ = 1 (w = 3.4 per rest point), and the table below shows λ = 0.25, 1, 4, the
+unweighted case, and a variant in which only the first sample of each rest (the instantaneous jump) enters. The rests
+are output at 0.05 s in the model with a particle mesh refined at the surface (60 radial points, exponential stretch),
+because the uniform v1 mesh lags the surface relaxation by seconds. The C/10 curves remain a check, but its rests are
+now training data. Leave-one-out refits drop one of the 10 residual blocks (4 curve steps, 6 rests) in turn.
+
+| Fit | Train RMSE curves / rests (mV) | τ = R²/Ds (s) | k (m^2.5 mol^-0.5 s^-1) | R_contact (Ω) | k–R_contact corr. | 2C prediction (mAh) |
+|---|---|---|---|---|---|---|
+| v1 DFN | 26.2 / – | 2.19e+03 (2.11e+03 to 2.27e+03); LOO 902 to 2.34e+03 | 2.41e-11 (1.56e-11 to 3.71e-11); LOO 1.19e-11 to 9.83e-09 | 96.5 (88.2 to 106); LOO 80.5 to 122 | 0.94 | 0.988 (+20.1 %) |
+| v2 DFN (full rest traces, λ = 1) | 28.8 / 40.2 | 207 (179 to 240); LOO 156 to 420 | 9.99e-09 (at bound, Jacobian interval undefined); LOO 1e-08 to 1e-08 | 135 (130 to 141); LOO 130 to 141 | 0.62 | 0.688 (-16.3 %) |
+| v2 DFN (jump only, λ = 1) | 33.0 / 87.4 | 2.5 (0.0218 to 286) | 1e-08 (at bound, Jacobian interval undefined) | 113 (109 to 117) | 0.54 | 1.212 (+47.3 %) |
+
+Intervals as in the v1 table (95 % Jacobian; LOO = leave-one-block-out range). k enters j0 = k F sqrt(c_e c_s (c_max - c_s)); its
+bounds are 1e-14 to 1e-8 and Ds's are 1e-17 to 1e-11 m²/s. In the headline v2 fit k sits at the bound of the search box, i.e. the optimiser wants no loss from that term at all.
+The k–R_contact correlation drops from 0.94 to 0.62, so the rests do decorrelate the two parameters, but not in the
+direction expected: R_contact moves up to 135 Ω although the rests themselves say 72 Ω.
+
+![v2 rests](figures/v2_fit_rests_dfn.png)
+
+| Rest | I (mA) | Jump, mV (meas / v2 / v2 jump-only) | Jump / I, Ω (meas / v2 / v2 jump-only) | 30 s relaxation, mV (meas / v2 / v2 jump-only) |
+|---|---|---|---|---|
+| C/10 rest after charge | 0.147 | 10 / 21 / 18 | 71 / 145 / 120 | 73 / 25 / 18 |
+| C/10 rest after discharge | 0.140 | 14 / 40 / 19 | 98 / 287 / 134 | 173 / 143 / 20 |
+| C/5 rest after charge | 0.287 | 19 / 42 / 34 | 67 / 145 / 120 | 105 / 50 / 35 |
+| C/5 rest after discharge | 0.286 | 26 / 74 / 38 | 92 / 257 / 132 | 227 / 171 / 41 |
+| C/2 rest after charge | 0.717 | 50 / 105 / 86 | 70 / 146 / 120 | 171 / 131 / 87 |
+| C/2 rest after discharge | 0.717 | 73 / 136 / 91 | 101 / 190 / 127 | 285 / 204 / 96 |
+
+**Why the model cannot use the rests.** The measured relaxation keeps going at roughly the same number of mV per
+decade of time from 50 ms to 30 s. In this model the current switches off and three things happen: the contact,
+electrolyte and solid ohmic drops vanish at once, the charge-transfer overpotential vanishes at once (there is no
+double-layer capacitance), and the particle-surface concentration relaxes as sqrt(t) with one time constant R²/Ds.
+Nothing relaxes like log(t). Forced to put a 100 to 280 mV relaxation somewhere, the least-squares fit can only
+match its mean level, which it does by making the instantaneous jump larger (bigger R_contact, k at the bound so that
+charge transfer costs nothing) and the diffusion faster. The curves and the rests are therefore inconsistent inside
+this model structure: the curves need about 97 Ω of resistance plus a charge-transfer overpotential, the rests say only
+72 Ω of all that is instantaneous, and the remainder relaxes over seconds in a way that is neither Butler-Volmer-instantaneous nor
+single-particle Fickian. That is the finding of v2.
+
+### Sensitivity to the rest weighting
+
+| Model | Rest weighting | w per rest point | Rest points | τ (s) | k | R_contact (Ω) | k–R corr. | Curves RMSE (mV) | Rest traces RMSE (mV) |
+|---|---|---|---|---|---|---|---|---|---|
+| SPMe | unweighted | 1.0 | 101 | 467 | 6.4e-11 | 125 | 0.88 | 27.7 | 45.8 |
+| SPMe | lambda=0.25 | 1.7 | 101 | 233 | 1e-08 | 135 | 0.80 | 28.7 | 40.3 |
+| SPMe | lambda=1 | 3.4 | 101 | 207 | 9.99e-09 | 135 | 0.63 | 28.8 | 40.2 |
+| SPMe | lambda=4 | 6.9 | 101 | 200 | 1e-08 | 135 | 0.48 | 28.8 | 40.2 |
+| SPMe | jump only, lambda=1 | 14.1 | 6 | 2.5 | 1e-08 | 113 | 0.58 | 33.0 | 87.4 |
+
+Every weighting that uses the full rest traces moves R_contact above the v1 value; the jump-only variant, which
+asks the model to match only the first sample of each rest, cannot do that either without losing the curves (its curve
+RMSE is the worst), because the model's instantaneous jump is R_contact plus the whole charge-transfer overpotential,
+and the curves need more current-proportional loss than 72 Ω provides.
+
+![Weighting sensitivity](figures/v2_weighting_sensitivity_dfn.png)
+
+### Blind validation, v1 vs v2 (DFN)
+
+| Rate | Role | Q meas (mAh) | Q v1 | Q v2 | V̄ meas (V) | V̄ v1 | V̄ v2 | E meas (mWh) | E v1 | E v2 | V-Q RMSE v1 (mV) | V-Q RMSE v2 (mV) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| C/10 | curve not fitted; its rests are in v2 | 1.430 | 1.415 (-1.0 %) | 1.425 (-0.3 %) | 4.036 | 4.044 | 4.044 | 5.77 | 5.72 | 5.76 | 25 | 15 |
+| C/5 | training | 1.422 | 1.401 (-1.5 %) | 1.422 (-0.0 %) | 4.016 | 4.023 | 4.022 | 5.71 | 5.64 | 5.72 | 26 | 15 |
+| C/2 | training | 1.361 | 1.360 (-0.1 %) | 1.412 (+3.7 %) | 3.960 | 3.965 | 3.958 | 5.39 | 5.39 | 5.59 | 21 | 40 |
+| 2C | blind prediction | 0.823 | 0.988 (+20.1 %) | 0.688 (-16.3 %) | 3.696 | 3.679 | 3.588 | 3.04 | 3.63 | 2.47 | 66 | 149 |
+
+The 2C capacity error moves from +20.1 % to -16.3 %: a smaller number, but the wrong answer for the wrong reason, because the 135 Ω resistance simply pulls the whole 2C curve down (V-Q RMSE 66 to 149 mV). In numbers: 2C V-Q RMSE 66 mV (v1) against 149 mV (v2), mean-voltage error
+-17 against -108 mV, energy error +19.5 % against -18.8 %. The jump-only variant, with no diffusion and no charge-transfer loss left, predicts 1.212 mAh (+47.3 %). Nothing was tuned on 2C or on the CVs; the v2 fits are reported as they came out.
+
+![v1 vs v2 at 2C](figures/v2_comparison_2c.png)
+
+Cyclic voltammetry with the v2 parameters, simulated with the measured voltage programme as in v1:
+
+| Scan rate | Ox. peak V (meas / v2) | Ox. peak mA (meas / v2) | Red. peak V (meas / v2) | Red. peak mA (meas / v2) | ΔEp mV (meas / v2) |
+|---|---|---|---|---|---|
+| 0.1 mV/s | 4.35 / 4.39 | 1.62 / 1.60 | 3.81 / 3.74 | -1.28 / -1.50 | 548 / 644 |
+| 0.2 mV/s | 4.42 / 4.50 | 2.42 / 2.49 | 3.72 / 3.59 | -2.06 / -2.47 | 693 / 906 |
+| 0.3 mV/s | 4.49 / 4.65 | 3.12 / 3.34 | 3.64 / 3.48 | -2.73 / -3.24 | 856 / 1170 |
+
+b-values with v2: 0.66 (oxidation) and 0.70 (reduction) against 0.60 / 0.69 measured
+(v1: 0.66 / 0.70). The largest CV peak shift is 159 mV with v2 against 80 mV with v1.
+
+### Overpotential breakdown at 2C with v2
+
+Capacity-weighted mean loss on the 2C discharge: 414 mV (v1: 374 mV), of which 94 % contact/ohmic
+(v1 74 %), 3 % charge transfer (v1 17 %), 1 % particle diffusion
+(v1 6 %) and 2 % electrolyte. The bulk OCV at the 2C cut-off is 3.92 V, i.e. 0.07 mAh locked out
+(v1: 3.95 V, 0.15 mAh).
+
+![v2 overpotentials](figures/v2_overpotentials_dfn.png)
+
+### Post-hoc: the 2C rests (never used for fitting)
+
+Measured 2C cycle-2 jumps: 73 Ω after charge and 91 Ω after discharge, against the v2 R_contact of 135 Ω; the v2 model jumps are 142 and 142 Ω, and its 30 s relaxations 417 / 418 mV against 296 / 382 mV measured.
+The 2C after-charge jump sits with the C/10 to C/2 ones at about 70 to 75 Ω, so the instantaneous resistance of the
+cell is rate-independent and the v2 value is not it: the comparison confirms the diagnosis above rather than the fit.
+
+### v2.1: giving the model a relaxation (same data, one model change)
+
+v2 established that the v1 model class cannot hold the rests. v2.1 changes the model, not the data: it is fitted to
+exactly the same curves and rests as v2 (λ = 1, full rest traces), 2C stays blind, and the change is chosen on the
+training data alone. Two standard PyBaMM options add the missing physics, each with one new fitted parameter:
+
+- **Double-layer capacitance** (`surface form: differential`): the charge-transfer overpotential relaxes through
+  R_ct·C_dl instead of vanishing at the switch-off. In the intermittent-current-interruption literature this RC
+  process is what sets the voltage between about 2 ms and 1 s after an interruption, with the ohmic drop before
+  it and the √t diffusion tail after it (Geng, Thiringer and Lacey, IEEE Trans. Transp. Electrif. 2021). The
+  fitted C_dl is an effective value per unit of model particle surface, so it also absorbs the unknown real
+  surface area.
+- **Particle-size distribution** (`particle size: distribution`, the MP-DFN / MPM): an area-weighted lognormal
+  radius distribution with the v1 mean of 5 µm and a fitted relative standard deviation sd_p spreads the
+  diffusion time constant R²/Ds over sizes. Kirk, Please and Chapman (J. Electrochem. Soc. 168, 2021) showed
+  that this, and not any single-size DFN, reproduces the slow voltage relaxation after a discharge.
+
+Both options also exist together. All three variants were fitted with the SPMe (each from 3 starting points, lowest
+cost kept, because the cost surface has several minima); the DFN then runs the chosen variant from the SPMe optimum.
+The table is training data only and decided which variant goes forward:
+
+| Model | Variant | PyBaMM options | τ (s) | k | R_contact (Ω) | Extra parameter(s) | k–R corr. | Curves RMSE (mV) | Rests RMSE (mV) |
+|---|---|---|---|---|---|---|---|---|---|
+| SPMe | dl (headline) | surface form: differential | 1e+03 | 1.13e-11 | 89 | C_dl = 3.15 | 0.88 | 26.0 | 14.9 |
+| SPMe | psd | particle size: distribution | 134 | 1.48e-11 | 84 | sd_p = 2 | 0.90 | 23.6 | 35.7 |
+| SPMe | psd+dl | surface form: differential, particle size: distribution | 773 | 1.66e-11 | 88 | C_dl = 3.03, sd_p = 0.554 | 0.87 | 23.2 | 15.3 |
+| DFN | dl (headline) | surface form: differential | 997 | 1.13e-11 | 89 | C_dl = 3.15 | 0.88 | 26.0 | 14.9 |
+
+The headline v2.1 variant is **dl** (`surface form: differential`), chosen because it gives the lowest rest misfit for the fewest
+added parameters without worsening the curves. Its parameters with 95 % Jacobian and leave-one-block-out intervals:
+
+| Fit | Train RMSE curves / rests (mV) | τ = R²/Ds (s) | k | R_contact (Ω) | k–R_contact corr. | 2C prediction (mAh) |
+|---|---|---|---|---|---|---|
+| v1 DFN | 26.2 / – | 2.19e+03 (2.11e+03 to 2.27e+03); LOO 902 to 2.34e+03 | 2.41e-11 (1.56e-11 to 3.71e-11); LOO 1.19e-11 to 9.83e-09 | 96.5 (88.2 to 106); LOO 80.5 to 122 | 0.94 | 0.988 (+20.1 %) |
+| v2 DFN | 28.8 / 40.2 | 207 (179 to 240); LOO 156 to 420 | 9.99e-09 (at bound, Jacobian interval undefined); LOO 1e-08 to 1e-08 | 135 (130 to 141); LOO 130 to 141 | 0.62 | 0.688 (-16.3 %) |
+| v2.1 DFN (dl) | 26.0 / 14.9 | 997 (909 to 1.09e+03); LOO 805 to 1.2e+03 | 1.13e-11 (9.49e-12 to 1.35e-11); LOO 8.01e-12 to 3.01e-11 | 89 (83.5 to 95); LOO 74.1 to 104 | 0.88 | 1.046 (+27.1 %) |
+
+Extra parameter(s): C_dl = 3.15 (2.92 to 3.4); LOO 2.76 to 3.51 F/m2 of particle surface (effective; absorbs the unknown real surface area).
+
+![v2.1 rests](figures/v2_1_fit_rests_dfn.png)
+
+| Rest | I (mA) | Jump at 48 ms, mV (meas / v2.1) | Jump / I, Ω (meas / v2.1) | 30 s relaxation, mV (meas / v2.1) | Error at 30 s (mV) |
+|---|---|---|---|---|---|
+| C/10 rest after charge | 0.147 | 10 / 15 | 71 / 103 | 73 / 34 | +39 |
+| C/10 rest after discharge | 0.140 | 14 / 14 | 98 / 102 | 173 / 170 | -3 |
+| C/5 rest after charge | 0.287 | 19 / 30 | 67 / 103 | 105 / 69 | +35 |
+| C/5 rest after discharge | 0.286 | 26 / 29 | 92 / 103 | 227 / 207 | -20 |
+| C/2 rest after charge | 0.717 | 50 / 74 | 70 / 103 | 171 / 180 | -9 |
+| C/2 rest after discharge | 0.717 | 73 / 74 | 101 / 103 | 285 / 302 | +17 |
+
+With a double layer the charge-transfer overpotential no longer has to vanish at the switch-off, so the rests are
+matched to 15 mV against 40 mV in v2 with the curves at 26.0 mV, k is identifiable again and sits
+near its v1 value, and R_contact comes out at 89 Ω. That is above the 72 Ω model-free jump: the model over-shoots the 48 ms sample (one point in 10 to 25 per rest) and uses the RC relaxation to match the rest of the trace, so the first sample is still not reproduced and the ohmic part of the loss is still not pinned. The other minima the SPMe
+multi-start found (R_contact 101 Ω at cost 1.15, R_contact 89 Ω at cost 1.08, R_contact 101 Ω at cost 1.15) are listed in
+`results/v2_1_fit_spme.json`. What the variant still misses is in the figure: the slow tail of the rests after charge at C/10 and C/5 (tens of mV
+between 1 and 30 s), the regime Kirk et al. attribute to a size distribution.
+
+#### Blind validation, v1 vs v2 vs v2.1 (DFN)
+
+| Rate | Role | Q meas (mAh) | Q v1 | Q v2 | Q v2.1 | V-Q RMSE v1 (mV) | v2 | v2.1 | V̄ error v1 (mV) | v2 | v2.1 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| C/10 | curve not fitted; rests in v2 and v2.1 | 1.430 | 1.415 (-1.0 %) | 1.425 (-0.3 %) | 1.423 (-0.4 %) | 25 | 15 | 16 | +8 | +8 | +7 |
+| C/5 | training | 1.422 | 1.401 (-1.5 %) | 1.422 (-0.0 %) | 1.415 (-0.5 %) | 26 | 15 | 11 | +7 | +6 | +5 |
+| C/2 | training | 1.361 | 1.360 (-0.1 %) | 1.412 (+3.7 %) | 1.391 (+2.2 %) | 21 | 40 | 32 | +5 | -1 | -1 |
+| 2C | blind prediction | 0.823 | 0.988 (+20.1 %) | 0.688 (-16.3 %) | 1.046 (+27.1 %) | 66 | 149 | 63 | -17 | -108 | -19 |
+
+v2.1 does not improve the blind 2C capacity: the blind 2C capacity error is +20.1 % (v1), -16.3 % (v2) and +27.1 % (v2.1); the 2C V-Q RMSE 66, 149 and 63 mV. At 2C the double layer is charged within a second and then plays no part, so v2.1 behaves like v1 with a lower resistance, a larger charge-transfer share and faster diffusion (τ = 997 s against 2192 s), which is why its capacity comes out higher still. CVs with v2.1: largest peak shift 105 mV (v1 80, v2 159); b-values 0.69 / 0.74 against 0.60 / 0.69 measured.
+
+![v1 vs v2 vs v2.1 at 2C](figures/v2_comparison_2c.png)
+
+At 2C the v2.1 model attributes 69 % of the mean loss to contact/ohmic resistance, 26 % to charge transfer and 3 % to particle diffusion (v1: 74 / 17 / 6 %), with 0.10 mAh locked in the particles at the cut-off.
+Post-hoc 2C rests (never fitted): measured jumps 73 / 91 Ω after charge / discharge, v2.1 model 103 / 102 Ω; 30 s relaxation 296 / 382 mV measured against 358 / 428 mV; rest RMSE 85 / 55 mV.
+
+![v2.1 overpotentials](figures/v2_1_overpotentials_dfn.png)
+
 ## Next step
 
-The weakest point is the 0.94 correlation between the rate constant and the contact resistance: C/5 and C/2 alone
-cannot tell an instantaneous ohmic drop from a transport loss that builds up over time, so the fit chose the
-ohmic explanation and over-predicts 2C capacity. Every galvanostatic step in this data ends with a 30 s rest; the
-instantaneous voltage jump at the start of each rest is the ohmic part and the slow relaxation that follows is
-the diffusion part. Adding those relaxations to the training set, still without touching 2C, is the direct way
-to break that correlation.
+v2.1 shows that the rests are usable once the model has a relaxation of its own, and it tells where the remaining
+mismatch sits: the slow tail after charge at low rate, and the first 48 ms that no sample in this data resolves.
+Three things would settle the rest. A current-interruption or GITT programme logged at 1 kHz would separate the
+ohmic drop (< 2 ms) from the double-layer relaxation that the present 48 ms first sample mixes into it. An EIS
+spectrum would give C_dl and the lithium-metal interphase resistance directly instead of as fitted effective
+values. And a measured particle-size distribution (SEM) would fix sd_p so the combined double-layer plus
+size-distribution model has nothing left to trade off.
 
 ## Method
 
@@ -153,9 +376,16 @@ to break that correlation.
    simulated in voltage-control mode by feeding the model the measured voltage programme.
 6. **Diagnostics** (`src/lmo/diagnostics.py`): PyBaMM's voltage-component variables, checked to close to the
    terminal voltage to better than 1e-03 µV; CV b-values and Randles-Sevcik.
-7. **Reproduce**: `pip install -r requirements.txt && pip install -e . && make all` regenerates
+7. **v2, rests in the fit** (`src/lmo/fit_v2.py`, `src/lmo/relaxation.py`): the parser also extracts every
+   30 s post-step rest (`tests/test_rests.py`); v2 refits the same three parameters on the C/5 and C/2 curves plus
+   the C/10, C/5 and C/2 cycle-1 rests, with a surface-refined particle mesh so the first second of the rest is
+   resolved. v2 writes `results/v2_*.json`, `data/processed/v2_*.csv` and `figures/v2_*.png`; the v1 files are
+   untouched. v2.1 (`src/lmo/fit_v21.py`) refits the same data with PyBaMM's double-layer and particle-size-distribution
+   options (`results/v2_1_*.json`, `figures/v2_1_*.png`). 2C is never fitted in any version.
+8. **Reproduce**: `pip install -r requirements.txt && pip install -e . && make all` regenerates
    `data/processed/`, `results/*.json`, `figures/*.png` and this README (`python scripts/write_readme.py`).
-   `make test` runs the parser tests. `python scripts/run_all.py --fast` skips the DFN.
+   `make test` runs the parser tests. `python scripts/run_all.py --fast` skips the DFN; `--v1-only` and `--v2-only`
+   run one version.
 
 ## Assumptions and limitations
 
@@ -187,7 +417,8 @@ to break that correlation.
 data/raw/            EC-Lab exports (never modified)      data/README.md   data notes and known quirks
 data/processed/      pseudo-OCV, dQ/dV, model curves       src/lmo/         package (io, ocv, model, fit, validate, diagnostics, figures)
 scripts/run_all.py   regenerates everything                scripts/write_readme.py renders this file from results/*.json
-tests/test_io.py     parser tests vs the report values     notebooks/walkthrough.ipynb
-results/*.json       every number quoted here              figures/*.png    300 dpi
-results/resume_bullets.md
+tests/test_io.py     parser tests vs the report values     tests/test_rests.py  rest parser tests
+results/*.json       every v1 number quoted here           figures/*.png    300 dpi
+results/v2_*.json    every v2 number quoted here           figures/v2_*.png v2 figures
+results/resume_bullets.md                                  notebooks/walkthrough.ipynb
 ```

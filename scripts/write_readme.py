@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from lmo.fit_v21 import STARTS  # noqa: E402
 RESULTS = ROOT / "results"
 
 
@@ -402,12 +404,17 @@ def v21_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
     jump_table = "\n".join(["| Rest | I (mA) | Jump at 48 ms, mV (meas / v2.1) | Jump / I, Ω (meas / v2.1) | 30 s relaxation, mV (meas / v2.1) | Error at 30 s (mV) |", "|---|---|---|---|---|---|"] + jrows)
 
     verdict = f"the blind 2C capacity error is {e1['capacity_error_pct']:+.1f} % (v1), {e2['capacity_error_pct']:+.1f} % (v2) and {e21['capacity_error_pct']:+.1f} % (v2.1); the 2C V-Q RMSE {e1['vq_rmse_mV']:.0f}, {e2['vq_rmse_mV']:.0f} and {e21['vq_rmse_mV']:.0f} mV"
+    why = (
+        f" At 2C the double layer is charged within a second and then plays no part, so v2.1 behaves like v1 with a lower "
+        f"resistance, a larger charge-transfer share and faster diffusion (τ = {p21['tau_R2_over_Ds_s']['value']:.0f} s against {p1['tau_R2_over_Ds_s']['value']:.0f} s), "
+        f"which is why its capacity comes out higher still."
+    )
     if improved:
         verdict_txt = f"v2.1 is the first version that improves the blind 2C prediction on both counts: {verdict}."
     elif abs(e21["capacity_error_pct"]) < abs(e1["capacity_error_pct"]):
         verdict_txt = f"v2.1 reduces the 2C capacity error but not the 2C curve error: {verdict}."
     else:
-        verdict_txt = f"v2.1 does not improve the blind 2C prediction: {verdict}."
+        verdict_txt = f"v2.1 does not improve the blind 2C capacity: {verdict}.{why}"
 
     if p21["R_contact"]["value"] > R_free_chg + 5:
         r21_txt = (
@@ -418,6 +425,8 @@ def v21_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
         r21_txt = f"That is below the {R_free_chg:.0f} Ω model-free jump, which now reads as ohmic plus the part of the RC relaxation already over at 48 ms."
     else:
         r21_txt = f"That agrees with the {R_free_chg:.0f} Ω model-free jump."
+    spme_fit = load("v2_1_fit_spme.json") if (RESULTS / "v2_1_fit_spme.json").exists() else f21
+    spme_starts = spme_fit.get("starts_tried") or f21.get("starts_tried") or []
     sh = ov21["two_c"]["shares"] if ov21 else None
     cv_txt = ""
     if cv21:
@@ -452,8 +461,9 @@ training data alone. Two standard PyBaMM options add the missing physics, each w
   diffusion time constant R²/Ds over sizes. Kirk, Please and Chapman (J. Electrochem. Soc. 168, 2021) showed
   that this, and not any single-size DFN, reproduces the slow voltage relaxation after a discharge.
 
-Both options also exist together. All three variants were fitted ({H} and the other fidelity); the table is
-training data only and decided which variant goes forward:
+Both options also exist together. All three variants were fitted with the SPMe (each from {len(STARTS)} starting points, lowest
+cost kept, because the cost surface has several minima); the {H} then runs the chosen variant from the SPMe optimum.
+The table is training data only and decided which variant goes forward:
 
 {var_table}
 
@@ -470,9 +480,9 @@ Extra parameter(s): {extra_txt}.
 
 With a double layer the charge-transfer overpotential no longer has to vanish at the switch-off, so the rests are
 matched to {1000 * f21['training_rmse_rests_V']:.0f} mV against {1000 * fit2['training_rmse_rests_V']:.0f} mV in v2 with the curves at {1000 * f21['training_rmse_curves_V']:.1f} mV, k is identifiable again and sits
-near its v1 value, and R_contact comes out at {p21['R_contact']['value']:.0f} Ω. {r21_txt} The cost surface has more than one
-minimum: the fit was started from {len(f21.get('starts_tried') or [])} points and the lowest cost kept ({', '.join(f"R_contact {t['optimum']['R_contact']:.0f} Ω at cost {t['cost']:.2f}" for t in (f21.get('starts_tried') or []))}). What
-the variant still misses is in the figure: the slow tail of the rests after charge at C/10 and C/5 (tens of mV
+near its v1 value, and R_contact comes out at {p21['R_contact']['value']:.0f} Ω. {r21_txt} The other minima the SPMe
+multi-start found ({', '.join(f"R_contact {t['optimum']['R_contact']:.0f} Ω at cost {t['cost']:.2f}" for t in spme_starts)}) are listed in
+`results/v2_1_fit_spme.json`. What the variant still misses is in the figure: the slow tail of the rests after charge at C/10 and C/5 (tens of mV
 between 1 and 30 s), the regime Kirk et al. attribute to a size distribution.
 
 #### Blind validation, v1 vs v2 vs v2.1 ({H})
@@ -499,8 +509,10 @@ values. And a measured particle-size distribution (SEM) would fix sd_p so the co
 size-distribution model has nothing left to trade off."""
 
     key_bullet = (
-        f"- **v2.1, one model change (double layer{' and size distribution' if 'sd_p' in extra else ''}):** same training data as v2, "
-        f"{verdict_txt[0].lower() + verdict_txt[1:]} R_contact {p21['R_contact']['value']:.0f} Ω, rests matched to {1000 * f21['training_rmse_rests_V']:.0f} mV."
+        f"- **v2.1, one model change (double layer{' and size distribution' if 'sd_p' in extra else ''}), same training data as v2:** the rests are now "
+        f"matched to {1000 * f21['training_rmse_rests_V']:.0f} mV with R_contact {p21['R_contact']['value']:.0f} Ω and k identifiable, but the blind 2C capacity error is "
+        f"{e21['capacity_error_pct']:+.1f} % against {e1['capacity_error_pct']:+.1f} % for v1 (2C V-Q RMSE {e21['vq_rmse_mV']:.0f} against {e1['vq_rmse_mV']:.0f} mV): "
+        f"{'better' if improved else 'not an improvement'}, reported as it came out."
     )
     bullet = (
         f"- Diagnosed the model class from the rests and fixed it (v2.1): adding double-layer capacitance let the same data\n"
@@ -752,7 +764,8 @@ diameter that gives a physically plausible coating.
    30 s post-step rest (`tests/test_rests.py`); v2 refits the same three parameters on the C/5 and C/2 curves plus
    the C/10, C/5 and C/2 cycle-1 rests, with a surface-refined particle mesh so the first second of the rest is
    resolved. v2 writes `results/v2_*.json`, `data/processed/v2_*.csv` and `figures/v2_*.png`; the v1 files are
-   untouched. 2C is never fitted in either version.
+   untouched. v2.1 (`src/lmo/fit_v21.py`) refits the same data with PyBaMM's double-layer and particle-size-distribution
+   options (`results/v2_1_*.json`, `figures/v2_1_*.png`). 2C is never fitted in any version.
 8. **Reproduce**: `pip install -r requirements.txt && pip install -e . && make all` regenerates
    `data/processed/`, `results/*.json`, `figures/*.png` and this README (`python scripts/write_readme.py`).
    `make test` runs the parser tests. `python scripts/run_all.py --fast` skips the DFN; `--v1-only` and `--v2-only`
