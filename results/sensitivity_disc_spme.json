@@ -1,6 +1,28 @@
 {
   "model": "SPMe",
   "discs": {
+    "10.0": {
+      "geometry": {
+        "disc_mm": 10.0,
+        "area_m2": 7.853981633974483e-05,
+        "areal_loading_mg_cm2": 16.598413701365665,
+        "active_volume_fraction": 0.4562510638088418,
+        "inactive_volume_fraction": 0.06679627511199988,
+        "porosity": 0.4769526610791584,
+        "coating_density_g_cm3": 2.0729878483034425,
+        "plausibility": "plausible"
+      },
+      "parameters": {
+        "Ds": 1.1400733780325043e-14,
+        "k": 2.4074398698271813e-11,
+        "R_contact": 96.52624808094009
+      },
+      "training_rmse_V": 0.02620382772897025,
+      "predicted_2c_capacity_mAh": 0.9893702789532445,
+      "predicted_2c_error_pct": 20.22667775376828,
+      "predicted_2c_vq_rmse_mV": 66.06684853360801,
+      "fit_time_s": 11.414645195007324
+    },
     "12.0": {
       "geometry": {
         "disc_mm": 12.0,
@@ -9,7 +31,8 @@
         "active_volume_fraction": 0.31684101653391794,
         "inactive_volume_fraction": 0.04638630216111103,
         "porosity": 0.636772681304971,
-        "coating_density_g_cm3": 1.4395748946551687
+        "coating_density_g_cm3": 1.4395748946551687,
+        "plausibility": "light coating"
       },
       "parameters": {
         "Ds": 1.1402076686988739e-14,
@@ -20,7 +43,7 @@
       "predicted_2c_capacity_mAh": 0.988962230020633,
       "predicted_2c_error_pct": 20.177092306769854,
       "predicted_2c_vq_rmse_mV": 66.29310466525607,
-      "fit_time_s": 13.017184734344482
+      "fit_time_s": 11.88309359550476
     },
     "14.0": {
       "geometry": {
@@ -30,7 +53,8 @@
         "active_volume_fraction": 0.23278115500451108,
         "inactive_volume_fraction": 0.034079732199999935,
         "porosity": 0.7331391127954889,
-        "coating_density_g_cm3": 1.0576468613793073
+        "coating_density_g_cm3": 1.0576468613793073,
+        "plausibility": "implausibly porous"
       },
       "parameters": {
         "Ds": 1.14028938791199e-14,
@@ -41,7 +65,7 @@
       "predicted_2c_capacity_mAh": 0.9889294310903822,
       "predicted_2c_error_pct": 20.173106633759645,
       "predicted_2c_vq_rmse_mV": 66.3895857508461,
-      "fit_time_s": 12.286323308944702
+      "fit_time_s": 12.020538330078125
     },
     "16.0": {
       "geometry": {
@@ -51,7 +75,8 @@
         "active_volume_fraction": 0.17822307180032884,
         "inactive_volume_fraction": 0.026092294965624957,
         "porosity": 0.7956846332340463,
-        "coating_density_g_cm3": 0.8097608782435325
+        "coating_density_g_cm3": 0.8097608782435325,
+        "plausibility": "implausibly porous"
       },
       "parameters": {
         "Ds": 1.140575279632164e-14,
@@ -62,8 +87,8 @@
       "predicted_2c_capacity_mAh": 0.9890245545337071,
       "predicted_2c_error_pct": 20.1846658808997,
       "predicted_2c_vq_rmse_mV": 66.44476055524656,
-      "fit_time_s": 11.866282224655151
+      "fit_time_s": 11.33137583732605
     }
   },
-  "spread_of_2c_error_pct": 0.011559247140056073
+  "spread_of_2c_error_pct": 0.053571120008633955
 }

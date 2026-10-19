@@ -109,16 +109,19 @@ def main(headline_kind="DFN"):
         for d, e in sorted(sens[k]["discs"].items(), key=lambda x: float(x[0])):
             g = e["geometry"]
             sens_rows.append(
-                f"| {k} | {float(d):.0f} | {g['areal_loading_mg_cm2']:.1f} | {g['active_volume_fraction']:.2f} | {g['porosity']:.2f} | "
-                f"{e['parameters']['R_contact']:.0f} | {e['parameters']['Ds']:.2e} | {e['predicted_2c_capacity_mAh']:.3f} ({e['predicted_2c_error_pct']:+.1f} %) |"
+                f"| {k} | {float(d):.0f} | {g['areal_loading_mg_cm2']:.1f} | {g['coating_density_g_cm3']:.2f} | {g['active_volume_fraction']:.2f} | {g['porosity']:.2f} | "
+                f"{g.get('plausibility', '')} | {1000 * e['training_rmse_V']:.1f} | {e['parameters']['R_contact']:.0f} | {e['parameters']['Ds']:.2e} | "
+                f"{e['predicted_2c_capacity_mAh']:.3f} ({e['predicted_2c_error_pct']:+.1f} %) |"
             )
     sens_table = "\n".join(
         [
-            "| Model | Disc (mm) | Loading (mg/cm²) | ε_active | Porosity | R_contact (Ω) | Ds (m²/s) | 2C prediction (mAh) |",
-            "|---|---|---|---|---|---|---|---|",
+            "| Model | Disc (mm) | Loading (mg/cm²) | Coating density (g/cm³) | ε_active | Porosity | Coating | Train RMSE (mV) | R_contact (Ω) | Ds (m²/s) | 2C prediction (mAh) |",
+            "|---|---|---|---|---|---|---|---|---|---|---|",
         ]
         + sens_rows
     )
+    plausible = sorted({float(d) for k in sens for d, e in sens[k]["discs"].items() if e["geometry"].get("plausibility") == "plausible"})
+    pred_range = [e["predicted_2c_capacity_mAh"] for k in sens for e in sens[k]["discs"].values()]
 
     corr = fit[H]["log10_correlation"]
     c10 = val[H]["rates"]["C/10"]["discharge"]
@@ -208,12 +211,22 @@ single biggest limitation of this work, and it is visible in the k / R_contact c
 
 {sens_table}
 
-The disc diameter is not known. For each diameter the active volume fraction and porosity were re-derived from
-the capacity (active mass from the EC-Lab capacity and the 110 mAh/g rating, LMO density 4.28 g/cm³, binder and
-carbon at 1.8 g/cm³) and the three parameters re-fitted. The implied porosities are high, which means either the
-coating is unusually light or the nominal capacity under-states the loading; the 2C prediction barely moves,
-because with a lithium-metal counter electrode and this electrolyte the half cell is not electrolyte-limited
-in the model.
+The disc diameter is genuinely unknown: the EC-Lab `.mpr` settings block has electrode surface area and
+characteristic mass at their 0.001 defaults (never entered); only the 1.434 mAh battery capacity was set. The
+capacity therefore ties area to active volume fraction. Active mass = 1.434 mAh / 110 mAh/g = {1000 * ocv['active_mass_g']:.1f} mg,
+active volume = {1000 * ocv['active_mass_g'] / 4.28 * 1e-3 * 1e3:.2f}e-3 cm³ at 4.28 g/cm³, so for the 85 µm coating ε_active = {1000 * ocv['active_mass_g'] / 4.28 / 85e-4 * 1e-3:.3f} / A[cm²]:
+10 mm gives 0.46, 12 mm 0.32, 14 mm 0.23 and 16 mm 0.18. Binder and carbon (5.8 wt%) are taken at 1.8 g/cm³ and
+the rest of the coating volume is pore. A calendered oxide cathode normally has a porosity of 0.25 to 0.40
+(up to ~0.5 uncalendered) and an active volume fraction of 0.45 to 0.65. By that yardstick only the
+{', '.join(f'{d:.0f} mm' for d in plausible) if plausible else 'none of the'} disc{'s' if len(plausible) != 1 else ''} give{'s' if len(plausible) == 1 else ''} a physically plausible coating; 12 mm would be an
+unusually light coating and 14 to 16 mm imply porosities of 0.73 to 0.80, which no real electrode has. Either
+the disc is small, or the 1.434 mAh (110 mAh/g) capacity under-states the active loading, so that the true
+ε_active is higher than this derivation gives for any disc. The three parameters were re-fitted for every
+diameter: the training RMSE, τ, k and the 2C prediction do not change to the precision shown
+(2C spans {min(pred_range):.3f} to {max(pred_range):.3f} mAh), and only R_contact drifts by a few ohms as the electrolyte and solid
+ohmic paths take up slack. The model is not electrolyte-limited with a lithium-metal counter electrode and this
+electrolyte, so the unknown area does not affect the headline result, and the 14 mm assumption was kept for the
+headline figures as the mid-point of the 12 to 16 mm range coin cells usually use.
 
 ## Method
 
@@ -248,8 +261,13 @@ in the model.
 
 - One cell, one cycle per rate, and the seven tests ran in sequence on that cell, so slow drift (Mn dissolution,
   electrolyte oxidation at 4.5 V) is folded into the fitted parameters.
-- The electrode area is unknown; see the sensitivity table. The electrolyte is assumed to be 1 M LiPF6 in
-  carbonates with the `Xu2019` / Valoen2005 transport properties, and the lithium-metal kinetics are Xu2019's.
+- The electrode area was never entered in EC-Lab (surface area and characteristic mass are at the 0.001
+  defaults in the `.mpr` settings), so it is derived from the capacity: ε_active = {1000 * ocv['active_mass_g'] / 4.28 / 85e-4 * 1e-3:.3f} / A[cm²].
+  Only a 10 mm disc gives a conventional coating; the 12 to 16 mm discs imply light to implausibly porous
+  coatings, which points to the nominal capacity under-stating the loading. The headline uses 14 mm; the
+  sensitivity table shows the prediction does not depend on this choice.
+- The electrolyte is assumed to be 1 M LiPF6 in carbonates with the `Xu2019` / Valoen2005 transport
+  properties, and the lithium-metal kinetics are Xu2019's.
 - The fitted parameters are effective values: τ = R²/Ds at an assumed 5 µm radius, a rate constant that absorbs
   the unknown real surface area, and a contact resistance of about {fit[H]['parameters']['R_contact']['value']:.0f} Ω that lumps current-collector contact,
   separator and lithium-metal interphase resistance. The round-trip IR drop of that resistance at the C/10 current is {ir_c10_mV:.0f} mV, about half of the

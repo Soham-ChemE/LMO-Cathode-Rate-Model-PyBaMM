@@ -215,8 +215,14 @@ def validate_cv(kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DE
 # ------------------------------------------------------------------ disc diameter sensitivity
 
 
-def disc_sensitivity(kind: str = "SPMe", discs=(12.0, 14.0, 16.0), save: bool = True) -> dict:
-    """Refit the three parameters for each assumed disc diameter and re-predict 2C."""
+def disc_sensitivity(kind: str = "SPMe", discs=(10.0, 12.0, 14.0, 16.0), save: bool = True) -> dict:
+    """Refit the three parameters for each assumed disc diameter and re-predict 2C.
+
+    The EC-Lab .mpr settings hold no electrode area (surface area and characteristic mass are
+    at the 0.001 defaults), so the disc size is genuinely unknown. The capacity fixes the active
+    volume (13.0 mg / 4.28 g/cm3 = 3.05e-3 cm3), hence eps_s = 0.359 / A[cm2] for the 85 um
+    coating. Each disc is also graded for physical plausibility of the implied coating.
+    """
     out = {"model": kind, "discs": {}}
     for d in discs:
         result, _, elapsed = fit_parameters(kind, d, verbose=False)

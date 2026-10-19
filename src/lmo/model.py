@@ -36,8 +36,28 @@ F = 96485.33212
 DEFAULT_FIT = {"Ds": 1e-14, "k": 1e-11, "R_contact": 20.0}
 
 
+# Typical calendered oxide cathode coatings: porosity 0.25-0.40, up to ~0.5 if uncalendered, with
+# active volume fractions of 0.45-0.65. Used only to grade the disc-diameter assumption.
+PLAUSIBLE_POROSITY = (0.20, 0.50)
+
+
+def plausibility(porosity: float) -> str:
+    lo, hi = PLAUSIBLE_POROSITY
+    if lo <= porosity <= hi:
+        return "plausible"
+    if porosity < lo:
+        return "too dense"
+    if porosity <= 0.65:
+        return "light coating"
+    return "implausibly porous"
+
+
 def disc_geometry(disc_mm: float = DEFAULT_DISC_MM) -> dict:
-    """Area, active volume fraction and porosity consistent with the capacity for a disc."""
+    """Area, active volume fraction and porosity consistent with the capacity for a disc.
+
+    eps_s = V_active / (A L) = 0.359 cm2 / A for this cell: 10 mm 0.46, 12 mm 0.32, 14 mm 0.23,
+    16 mm 0.18.
+    """
     area = np.pi * (disc_mm * 1e-3 / 2) ** 2
     m_active = active_mass_g() * 1e-3
     m_inactive = m_active * (1 - ACTIVE_WT_FRACTION) / ACTIVE_WT_FRACTION
@@ -55,6 +75,7 @@ def disc_geometry(disc_mm: float = DEFAULT_DISC_MM) -> dict:
         "inactive_volume_fraction": eps_inactive,
         "porosity": porosity,
         "coating_density_g_cm3": (m_active + m_inactive) * 1e3 / (v_coating * 1e6),
+        "plausibility": plausibility(porosity),
     }
 
 
