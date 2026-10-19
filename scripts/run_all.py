@@ -53,6 +53,12 @@ def main(fast: bool = False):
         print("   ", p)
 
     write_summary(kinds)
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("write_readme", RESULTS_DIR.parent / "scripts" / "write_readme.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.main(headline)
     print(f"done in {(time.time() - t0) / 60:.1f} min")
 
 
