@@ -85,8 +85,11 @@ def run_v2(kinds, headline):
         print(f"v2-5. {kind} post-hoc 2C rests (not fitted)")
         relaxation.posthoc_2c_rests(kind)
     for kind in kinds:
-        print(f"v2.1-1. {kind}: variants with double layer and/or particle-size distribution, headline '{fit_v21.HEADLINE_VARIANT}' with LOO")
-        fit_v21.run(kind)
+        # The SPMe fits all three variants (the variant table); the DFN, whose size-distribution
+        # variants cost an order of magnitude more, runs the headline variant from the SPMe optimum.
+        variants = tuple(fit_v21.VARIANTS) if kind == "SPMe" else (fit_v21.HEADLINE_VARIANT,)
+        print(f"v2.1-1. {kind}: variants {variants}, headline '{fit_v21.HEADLINE_VARIANT}' with LOO")
+        fit_v21.run(kind, variants=variants)
         kw = fit_v21.sim_kwargs(fit_v21.HEADLINE_VARIANT)
         print(f"v2.1-2. {kind} blind validation, CVs, overpotentials, post-hoc 2C rests")
         validate.predict_all(kind, prefix="v2_1_", mesh="v2", sim_kwargs=kw)

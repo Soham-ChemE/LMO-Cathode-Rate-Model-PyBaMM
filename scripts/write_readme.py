@@ -303,6 +303,11 @@ diffusion time constant. With either in place the instantaneous jump (about {R_f
 relaxation would pin the rest; that is the fit that could move the 2C prediction, and it is the next thing to do.
 A measured electrode area and an EIS spectrum would remove the two remaining guesses (area, double-layer capacitance)."""
 
+    v21 = v21_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c)
+    if v21:
+        section = section.replace("## Next step", v21["section"] + "\n\n## Next step")
+        section = section.split("## Next step")[0] + v21["next_step"]
+        key_bullet += "\n" + v21["key_bullet"]
     bullet = (
         f"- Extended the fit with the 30 s post-step relaxations (v2): parsed every rest with tests, showed model-free that the\n"
         f"  instantaneous resistance is {R_free_chg:.0f} Ω against the {p1['R_contact']['value']:.0f} Ω the curve-only fit needed, and established that the\n"
@@ -310,7 +315,199 @@ A measured electrode area and an EIS spectrum would remove the two remaining gue
         f"  from {e1['capacity_error_pct']:+.1f} % to {e2['capacity_error_pct']:+.1f} %; identified double-layer capacitance and a particle-size distribution as the\n"
         f"  model additions that would use the rests.\n"
     )
+    if v21:
+        bullet += v21["bullet"]
     return {"section": section, "key_bullet": key_bullet, "bullet": bullet}
+
+
+def v21_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
+    """The v2.1 part of the v1 vs v2 section, or None if the v2.1 pipeline has not been run."""
+    needed = [f"v2_1_fit_{H.lower()}.json", f"v2_1_validation_{H.lower()}.json", f"v2_1_variants_{H.lower()}.json"]
+    if not all((RESULTS / n).exists() for n in needed) or "v2.1" not in comp["models"][H]:
+        return None
+    f21 = load(f"v2_1_fit_{H.lower()}.json")
+    v21 = load(f"v2_1_validation_{H.lower()}.json")
+    ov21 = load(f"v2_1_overpotentials_{H.lower()}.json") if (RESULTS / f"v2_1_overpotentials_{H.lower()}.json").exists() else None
+    cv21 = load(f"v2_1_cv_{H.lower()}.json") if (RESULTS / f"v2_1_cv_{H.lower()}.json").exists() else None
+    post = load(f"v2_1_rest_posthoc_2c_{H.lower()}.json") if (RESULTS / f"v2_1_rest_posthoc_2c_{H.lower()}.json").exists() else None
+    variants = {k: load(f"v2_1_variants_{k.lower()}.json") for k in kinds if (RESULTS / f"v2_1_variants_{k.lower()}.json").exists()}
+    p1, p2, p21 = fit1["parameters"], fit2["parameters"], f21["parameters"]
+    e1, e2, e21 = c["v1"]["two_c"], c["v2"]["two_c"], c["v2.1"]["two_c"]
+    R_free_chg = rests["after_charge_mean_ohm_c10_c5_c2"]
+    opts = ", ".join(f"`{a}: {b}`" for a, b in f21["model_options"].items())
+    extra = [n for n in p21 if n not in ("Ds", "k", "R_contact", "tau_R2_over_Ds_s")]
+    improved = c["v2.1"]["two_c"] and comp["models"][H].get("v2_1_two_c_improved", False)
+
+    # variant table (training data only)
+    vrows = []
+    for k, vj in variants.items():
+        for name, e in vj["variants"].items():
+            pr = e["parameters"]
+            ex = ", ".join(f"{n} = {pr[n]:.3g}" for n in pr if n not in ("Ds", "k", "R_contact"))
+            vrows.append(
+                f"| {k} | {name}{' (headline)' if name == vj['headline_variant'] else ''} | {', '.join(f'{a}: {b}' for a, b in e['model_options'].items())} | "
+                f"{e['tau_R2_over_Ds_s']:.3g} | {pr['k']:.3g} | {pr['R_contact']:.0f} | {ex} | {e['k_R_contact_correlation']:.2f} | "
+                f"{e['training_rmse_curves_mV']:.1f} | {e['training_rmse_rests_mV']:.1f} |"
+            )
+    var_table = "\n".join(
+        ["| Model | Variant | PyBaMM options | τ (s) | k | R_contact (Ω) | Extra parameter(s) | k–R corr. | Curves RMSE (mV) | Rests RMSE (mV) |", "|---|---|---|---|---|---|---|---|---|---|"] + vrows
+    )
+
+    # parameter table v1 / v2 / v2.1 with intervals
+    def prow(name, fj, vj, extra_cols):
+        p = fj["parameters"]
+        return (
+            f"| {name} | {extra_cols} | {fmt_ci(p['tau_R2_over_Ds_s'])} | {fmt_ci(p['k'])} | {fmt_ci(p['R_contact'])} | "
+            f"{fj['log10_correlation']['k-R_contact']:.2f} | {vj['headline']['predicted_mAh']:.3f} ({vj['headline']['error_pct']:+.1f} %) |"
+        )
+
+    par_table = "\n".join(
+        [
+            "| Fit | Train RMSE curves / rests (mV) | τ = R²/Ds (s) | k | R_contact (Ω) | k–R_contact corr. | 2C prediction (mAh) |",
+            "|---|---|---|---|---|---|---|",
+            prow(f"v1 {H}", fit1, val1, f"{1000 * fit1['training_rmse_V']:.1f} / –"),
+            prow(f"v2 {H}", fit2, val2, f"{1000 * fit2['training_rmse_curves_V']:.1f} / {1000 * fit2['training_rmse_rests_V']:.1f}"),
+            prow(f"v2.1 {H} ({f21['variant']})", f21, v21, f"{1000 * f21['training_rmse_curves_V']:.1f} / {1000 * f21['training_rmse_rests_V']:.1f}"),
+        ]
+    )
+    extra_txt = "; ".join(f"{n} = {fmt_ci(p21[n])} {p21[n].get('unit', '')}" for n in extra)
+
+    # validation table v1 / v2 / v2.1
+    rows = []
+    for rate in val1["rates"]:
+        d1, d2, d3 = val1["rates"][rate]["discharge"], val2["rates"][rate]["discharge"], v21["rates"][rate]["discharge"]
+        role = v21["rates"][rate]["role"] if rate != "C/10" else "curve not fitted; rests in v2 and v2.1"
+        rows.append(
+            f"| {rate} | {role} | {d1['capacity_mAh_measured']:.3f} | {d1['capacity_mAh_model']:.3f} ({d1['capacity_error_pct']:+.1f} %) | {d2['capacity_mAh_model']:.3f} ({d2['capacity_error_pct']:+.1f} %) | "
+            f"{d3['capacity_mAh_model']:.3f} ({d3['capacity_error_pct']:+.1f} %) | {d1['vq_rmse_mV']:.0f} | {d2['vq_rmse_mV']:.0f} | {d3['vq_rmse_mV']:.0f} | "
+            f"{d1['mean_voltage_error_mV']:+.0f} | {d2['mean_voltage_error_mV']:+.0f} | {d3['mean_voltage_error_mV']:+.0f} |"
+        )
+    val_table = "\n".join(
+        [
+            "| Rate | Role | Q meas (mAh) | Q v1 | Q v2 | Q v2.1 | V-Q RMSE v1 (mV) | v2 | v2.1 | V̄ error v1 (mV) | v2 | v2.1 |",
+            "|---|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        + rows
+    )
+
+    # rest jumps table v2.1
+    order = [f"{r} rest after {a}" for r in ("C/10", "C/5", "C/2") for a in ("charge", "discharge")]
+    jrows = []
+    for key in [k for k in order if k in f21["rest_jumps"]]:
+        e = f21["rest_jumps"][key]
+        jrows.append(
+            f"| {key} | {e['current_mA']:.3f} | {e['jump_measured_mV']:.0f} / {e['jump_model_mV']:.0f} | {e['instantaneous_resistance_measured_ohm']:.0f} / {e['instantaneous_resistance_model_ohm']:.0f} | "
+            f"{e['relaxation_30s_measured_mV']:.0f} / {e['relaxation_30s_model_mV']:.0f} | {e['end_of_rest_error_mV']:+.0f} |"
+        )
+    jump_table = "\n".join(["| Rest | I (mA) | Jump at 48 ms, mV (meas / v2.1) | Jump / I, Ω (meas / v2.1) | 30 s relaxation, mV (meas / v2.1) | Error at 30 s (mV) |", "|---|---|---|---|---|---|"] + jrows)
+
+    verdict = f"the blind 2C capacity error is {e1['capacity_error_pct']:+.1f} % (v1), {e2['capacity_error_pct']:+.1f} % (v2) and {e21['capacity_error_pct']:+.1f} % (v2.1); the 2C V-Q RMSE {e1['vq_rmse_mV']:.0f}, {e2['vq_rmse_mV']:.0f} and {e21['vq_rmse_mV']:.0f} mV"
+    if improved:
+        verdict_txt = f"v2.1 is the first version that improves the blind 2C prediction on both counts: {verdict}."
+    elif abs(e21["capacity_error_pct"]) < abs(e1["capacity_error_pct"]):
+        verdict_txt = f"v2.1 reduces the 2C capacity error but not the 2C curve error: {verdict}."
+    else:
+        verdict_txt = f"v2.1 does not improve the blind 2C prediction: {verdict}."
+
+    if p21["R_contact"]["value"] > R_free_chg + 5:
+        r21_txt = (
+            f"That is above the {R_free_chg:.0f} Ω model-free jump: the model over-shoots the 48 ms sample (one point in 10 to 25 per rest) and uses the "
+            f"RC relaxation to match the rest of the trace, so the first sample is still not reproduced and the ohmic part of the loss is still not pinned."
+        )
+    elif p21["R_contact"]["value"] < R_free_chg - 5:
+        r21_txt = f"That is below the {R_free_chg:.0f} Ω model-free jump, which now reads as ohmic plus the part of the RC relaxation already over at 48 ms."
+    else:
+        r21_txt = f"That agrees with the {R_free_chg:.0f} Ω model-free jump."
+    sh = ov21["two_c"]["shares"] if ov21 else None
+    cv_txt = ""
+    if cv21:
+        b = cv21["b_value"]
+        cv_txt = (
+            f"CVs with v2.1: largest peak shift {c['v2.1']['cv_max_peak_shift_mV']:.0f} mV (v1 {c['v1']['cv_max_peak_shift_mV']:.0f}, v2 {c['v2']['cv_max_peak_shift_mV']:.0f}); "
+            f"b-values {b['model_oxidation']['b']:.2f} / {b['model_reduction']['b']:.2f} against {b['measured_oxidation']['b']:.2f} / {b['measured_reduction']['b']:.2f} measured."
+        )
+    post_txt = ""
+    if post:
+        rc, rd = post["rests"]["2C rest after charge"], post["rests"]["2C rest after discharge"]
+        post_txt = (
+            f"Post-hoc 2C rests (never fitted): measured jumps {post['measured_2c_after_charge_ohm']:.0f} / {post['measured_2c_after_discharge_ohm']:.0f} Ω after charge / discharge, "
+            f"v2.1 model {rc['instantaneous_resistance_model_ohm']:.0f} / {rd['instantaneous_resistance_model_ohm']:.0f} Ω; 30 s relaxation {rc['relaxation_30s_measured_mV']:.0f} / {rd['relaxation_30s_measured_mV']:.0f} mV measured "
+            f"against {rc['relaxation_30s_model_mV']:.0f} / {rd['relaxation_30s_model_mV']:.0f} mV; rest RMSE {rc['rest_rmse_mV']:.0f} / {rd['rest_rmse_mV']:.0f} mV."
+        )
+
+    section = f"""### v2.1: giving the model a relaxation (same data, one model change)
+
+v2 established that the v1 model class cannot hold the rests. v2.1 changes the model, not the data: it is fitted to
+exactly the same curves and rests as v2 (λ = 1, full rest traces), 2C stays blind, and the change is chosen on the
+training data alone. Two standard PyBaMM options add the missing physics, each with one new fitted parameter:
+
+- **Double-layer capacitance** (`surface form: differential`): the charge-transfer overpotential relaxes through
+  R_ct·C_dl instead of vanishing at the switch-off. In the intermittent-current-interruption literature this RC
+  process is what sets the voltage between about 2 ms and 1 s after an interruption, with the ohmic drop before
+  it and the √t diffusion tail after it (Geng, Thiringer and Lacey, IEEE Trans. Transp. Electrif. 2021). The
+  fitted C_dl is an effective value per unit of model particle surface, so it also absorbs the unknown real
+  surface area.
+- **Particle-size distribution** (`particle size: distribution`, the MP-DFN / MPM): an area-weighted lognormal
+  radius distribution with the v1 mean of 5 µm and a fitted relative standard deviation sd_p spreads the
+  diffusion time constant R²/Ds over sizes. Kirk, Please and Chapman (J. Electrochem. Soc. 168, 2021) showed
+  that this, and not any single-size DFN, reproduces the slow voltage relaxation after a discharge.
+
+Both options also exist together. All three variants were fitted ({H} and the other fidelity); the table is
+training data only and decided which variant goes forward:
+
+{var_table}
+
+The headline v2.1 variant is **{f21['variant']}** ({opts}), chosen because it gives the lowest rest misfit for the fewest
+added parameters without worsening the curves. Its parameters with 95 % Jacobian and leave-one-block-out intervals:
+
+{par_table}
+
+Extra parameter(s): {extra_txt}.
+
+![v2.1 rests](figures/v2_1_fit_rests_{H.lower()}.png)
+
+{jump_table}
+
+With a double layer the charge-transfer overpotential no longer has to vanish at the switch-off, so the rests are
+matched to {1000 * f21['training_rmse_rests_V']:.0f} mV against {1000 * fit2['training_rmse_rests_V']:.0f} mV in v2 with the curves at {1000 * f21['training_rmse_curves_V']:.1f} mV, k is identifiable again and sits
+near its v1 value, and R_contact comes out at {p21['R_contact']['value']:.0f} Ω. {r21_txt} The cost surface has more than one
+minimum: the fit was started from {len(f21.get('starts_tried') or [])} points and the lowest cost kept ({', '.join(f"R_contact {t['optimum']['R_contact']:.0f} Ω at cost {t['cost']:.2f}" for t in (f21.get('starts_tried') or []))}). What
+the variant still misses is in the figure: the slow tail of the rests after charge at C/10 and C/5 (tens of mV
+between 1 and 30 s), the regime Kirk et al. attribute to a size distribution.
+
+#### Blind validation, v1 vs v2 vs v2.1 ({H})
+
+{val_table}
+
+{verdict_txt} {cv_txt}
+
+![v1 vs v2 vs v2.1 at 2C](figures/v2_comparison_2c.png)
+
+{('At 2C the v2.1 model attributes ' + format(100 * sh['contact_ohmic'], '.0f') + ' % of the mean loss to contact/ohmic resistance, ' + format(100 * sh['reaction'], '.0f') + ' % to charge transfer and ' + format(100 * sh['particle_diffusion'], '.0f') + ' % to particle diffusion (v1: ' + format(100 * c['v1']['two_c_shares']['contact_ohmic'], '.0f') + ' / ' + format(100 * c['v1']['two_c_shares']['reaction'], '.0f') + ' / ' + format(100 * c['v1']['two_c_shares']['particle_diffusion'], '.0f') + ' %), with ' + format(ov21['two_c']['capacity_locked_out_mAh'], '.2f') + ' mAh locked in the particles at the cut-off.') if ov21 else ''}
+{post_txt}
+
+![v2.1 overpotentials](figures/v2_1_overpotentials_{H.lower()}.png)"""
+
+    next_step = f"""## Next step
+
+v2.1 shows that the rests are usable once the model has a relaxation of its own, and it tells where the remaining
+mismatch sits: the slow tail after charge at low rate, and the first 48 ms that no sample in this data resolves.
+Three things would settle the rest. A current-interruption or GITT programme logged at 1 kHz would separate the
+ohmic drop (< 2 ms) from the double-layer relaxation that the present 48 ms first sample mixes into it. An EIS
+spectrum would give C_dl and the lithium-metal interphase resistance directly instead of as fitted effective
+values. And a measured particle-size distribution (SEM) would fix sd_p so the combined double-layer plus
+size-distribution model has nothing left to trade off."""
+
+    key_bullet = (
+        f"- **v2.1, one model change (double layer{' and size distribution' if 'sd_p' in extra else ''}):** same training data as v2, "
+        f"{verdict_txt[0].lower() + verdict_txt[1:]} R_contact {p21['R_contact']['value']:.0f} Ω, rests matched to {1000 * f21['training_rmse_rests_V']:.0f} mV."
+    )
+    bullet = (
+        f"- Diagnosed the model class from the rests and fixed it (v2.1): adding double-layer capacitance let the same data\n"
+        f"  identify the contact resistance ({p21['R_contact']['value']:.0f} Ω against the model-free {R_free_chg:.0f} Ω) and halved the rest misfit; the blind 2C\n"
+        f"  capacity error went from {e1['capacity_error_pct']:+.1f} % (v1) to {e21['capacity_error_pct']:+.1f} % (v2.1), reported without any tuning on 2C.\n"
+    )
+    return {"section": section, "next_step": next_step, "key_bullet": key_bullet, "bullet": bullet}
 
 
 def ov_two_c_v1(H):

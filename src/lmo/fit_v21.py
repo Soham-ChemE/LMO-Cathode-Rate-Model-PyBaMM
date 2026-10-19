@@ -50,7 +50,6 @@ EXTRA_DEFAULT = {"C_dl": 1.0, "sd_p": 0.5}
 # k), so the SPMe fit is run from these starting points and the lowest cost is kept; the DFN
 # starts from the SPMe optimum (v1 and v2 showed the two fidelities land within a few percent).
 STARTS = [
-    {"Ds": 1e-14, "k": 1e-11, "R_contact": 20.0, "C_dl": 1.0, "sd_p": 0.5},
     {"Ds": 1e-14, "k": 1e-11, "R_contact": 70.0, "C_dl": 5.0, "sd_p": 0.3},
     {"Ds": 1e-13, "k": 1e-9, "R_contact": 60.0, "C_dl": 0.2, "sd_p": 0.8},
     {"Ds": 3e-15, "k": 3e-11, "R_contact": 40.0, "C_dl": 20.0, "sd_p": 0.5},
