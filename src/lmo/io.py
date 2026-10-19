@@ -172,3 +172,115 @@ def cv_peaks(scan: str, cycle: int = 2) -> dict:
         "reduction_peak_V": float(v[i_red]),
         "reduction_peak_mA": float(i[i_red]),
     }
+
+
+# ------------------------------------------------------------------------------ rest periods
+
+
+@dataclass
+class Rest:
+    """The 30 s open-circuit rest that follows one charge or discharge step.
+
+    ``time_s`` is measured from the last sample under current (so the first rest sample sits at
+    ``first_sample_delay_s``), ``voltage_V`` is the rest trace, ``v_before_V`` and
+    ``current_before_mA`` describe the last sample under current. The instantaneous jump
+    divided by the current is a model-free resistance; because the first sample is recorded
+    tens of milliseconds after the switch-off it also contains the fastest part of the
+    charge-transfer relaxation, so that resistance is an upper bound on the ohmic part.
+    """
+
+    rate: str
+    cycle: int
+    after: str  # the preceding step: "charge" or "discharge"
+    time_s: np.ndarray
+    voltage_V: np.ndarray
+    v_before_V: float
+    current_before_mA: float
+    first_sample_delay_s: float
+
+    @property
+    def jump_V(self) -> float:
+        """Signed voltage change between the last sample under current and the first rest sample."""
+        return float(self.voltage_V[0] - self.v_before_V)
+
+    @property
+    def instantaneous_resistance_ohm(self) -> float:
+        """|jump| / |current|: ohmic resistance plus the charge-transfer part that relaxed before
+        the first sample, i.e. an upper bound on the pure ohmic resistance."""
+        return abs(self.jump_V) / abs(self.current_before_mA) * 1000.0
+
+    @property
+    def total_relaxation_V(self) -> float:
+        """Signed voltage change from the last sample under current to the end of the rest."""
+        return float(self.voltage_V[-1] - self.v_before_V)
+
+    @property
+    def duration_s(self) -> float:
+        return float(self.time_s[-1])
+
+
+def get_rest(rate: str, cycle: int, after: str, df: pd.DataFrame | None = None, min_points: int = 3) -> Rest:
+    """Extract the rest that follows the ``after`` step of ``cycle``."""
+    if after not in ("charge", "discharge"):
+        raise ValueError("after must be 'charge' or 'discharge'")
+    if df is None:
+        df = load_gcd(rate)
+    sel = df[(df["cycle"] == cycle) & (df["step"] == after)]
+    if sel.empty:
+        raise KeyError(f"no {after} step for {rate} cycle {cycle}")
+    step_id = int(sel["step_id"].iloc[-1])
+    rest = df[df["step_id"] == step_id + 1]
+    if rest.empty or rest["step"].iloc[0] != "rest" or len(rest) < min_points:
+        raise KeyError(f"no rest after {rate} cycle {cycle} {after}")
+    last = sel.iloc[-1]
+    t0 = float(last["time_s"])
+    t = rest["time_s"].to_numpy() - t0
+    return Rest(
+        rate=rate,
+        cycle=cycle,
+        after=after,
+        time_s=t,
+        voltage_V=rest["voltage_V"].to_numpy(),
+        v_before_V=float(last["voltage_V"]),
+        current_before_mA=float(last["current_mA"]),
+        first_sample_delay_s=float(t[0]),
+    )
+
+
+def all_rests(rates=None, cycles=(1, 2)) -> list[Rest]:
+    """Every post-step rest in the galvanostatic files (both cycles, both steps)."""
+    out = []
+    for rate in rates or list(RATES):
+        df = load_gcd(rate)
+        for cycle in cycles:
+            for after in ("charge", "discharge"):
+                try:
+                    out.append(get_rest(rate, cycle, after, df))
+                except KeyError:
+                    continue
+    return out
+
+
+def rest_summary(rates=None) -> pd.DataFrame:
+    """One row per rest: preceding step, current, first-sample delay, jump and relaxation."""
+    rows = []
+    for r in all_rests(rates):
+        rows.append(
+            {
+                "rate": r.rate,
+                "cycle": r.cycle,
+                "after": r.after,
+                "current_before_mA": r.current_before_mA,
+                "v_before_V": r.v_before_V,
+                "v_first_V": float(r.voltage_V[0]),
+                "v_end_V": float(r.voltage_V[-1]),
+                "first_sample_delay_s": r.first_sample_delay_s,
+                "duration_s": r.duration_s,
+                "n_points": int(len(r.time_s)),
+                "jump_mV": 1000 * r.jump_V,
+                "instantaneous_resistance_ohm": r.instantaneous_resistance_ohm,
+                "total_relaxation_mV": 1000 * r.total_relaxation_V,
+                "slow_relaxation_mV": 1000 * (r.total_relaxation_V - r.jump_V),
+            }
+        )
+    return pd.DataFrame(rows)
