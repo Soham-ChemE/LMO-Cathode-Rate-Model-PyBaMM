@@ -63,13 +63,24 @@ def rest_key(rate: str, after: str) -> str:
 class V2Residual:
     """Curve residuals (v1) plus weighted rest residuals, sharing one simulation per rate."""
 
-    def __init__(self, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, lam: float | None = HEADLINE_LAMBDA, mode: str = "trace"):
+    def __init__(
+        self,
+        kind: str = "SPMe",
+        disc_mm: float = DEFAULT_DISC_MM,
+        lam: float | None = HEADLINE_LAMBDA,
+        mode: str = "trace",
+        sim_kwargs: dict | None = None,
+        param_names=PARAM_NAMES,
+    ):
         rates = {r for r, _ in TRAINING} | {r for r, _ in REST_TRAINING}
         assert FORBIDDEN_RATE not in rates, "2C must never enter the fit"
         assert mode in ("trace", "jump")
         cycles = dict(TRAINING + REST_TRAINING)
         self.kind, self.disc_mm, self.lam, self.mode = kind, disc_mm, lam, mode
-        self.sims = {r: RateSimulator(r, cycles[r], kind, disc_mm, rest_period_s=REST_PERIOD_S, mesh="v2") for r in sorted(rates)}
+        self.param_names = list(param_names)
+        self.sims = {
+            r: RateSimulator(r, cycles[r], kind, disc_mm, rest_period_s=REST_PERIOD_S, mesh="v2", **(sim_kwargs or {})) for r in sorted(rates)
+        }
         self.curve_points = {}
         for rate, cyc in TRAINING:
             for k, (t, v) in self.sims[rate].residual_points(N_POINTS_PER_STEP).items():
@@ -107,11 +118,16 @@ class V2Residual:
                 out[b] = np.interp(r.time_s[idx], f["time_s"].to_numpy(), f["voltage_V"].to_numpy()) - r.voltage_V[idx]
         return out
 
+    def unpack(self, theta_log10) -> dict:
+        return {n: 10.0 ** v for n, v in zip(self.param_names, theta_log10)}
+
     def weighted(self, theta, blocks=None) -> np.ndarray:
         blocks = blocks or self.blocks
         try:
-            res = self.evaluate(unpack(theta), blocks)
-        except pybamm.SolverError:
+            res = self.evaluate(self.unpack(theta), blocks)
+        except (pybamm.SolverError, KeyError):
+            # Solver failure, or an experiment that terminated before all its steps ran
+            # (the frame for a step is then missing): a flat penalty residual.
             return np.full(sum(self._n(b) for b in blocks), 1.0)
         return np.concatenate([res[b] * (self.w_rest if b[0] == "rest" else 1.0) for b in blocks])
 

@@ -54,8 +54,16 @@ class RateSimulator:
         n_cycles: int | None = None,
         rest_period_s: float | None = None,
         mesh: str = "v1",
+        model_options: dict | None = None,
+        param_hook=None,
+        extra_inputs: tuple[str, ...] = (),
+        var_pts_extra: dict | None = None,
     ):
+        """``model_options``, ``param_hook`` (a callable that edits the ParameterValues in place),
+        ``extra_inputs`` (names of further InputParameters the hook introduced) and
+        ``var_pts_extra`` are used by the v2.1 model variants; the defaults give v1/v2."""
         self.rate, self.cycle, self.kind = rate, cycle, kind
+        self.input_names = list(PARAM_NAMES) + list(extra_inputs)
         self.steps = {k: get_step(rate, cycle, k) for k in ("charge", "discharge")}
         # The run is simulated from its first cycle so that the state entering ``cycle`` carries
         # the history of the earlier cycle (matters for 2C, whose cycle 1 started over-lithiated).
@@ -70,14 +78,22 @@ class RateSimulator:
             disc_mm=disc_mm,
             initial_sto=ocv_to_sto(self.start_voltage),
         )
+        if param_hook is not None:
+            param_hook(params)
         self.sim = make_simulation(
-            gcd_experiment(currents, n_cycles=self.n_cycles, rest_period_s=rest_period_s), params, kind, make_model(kind), mesh=mesh
+            gcd_experiment(currents, n_cycles=self.n_cycles, rest_period_s=rest_period_s),
+            params,
+            kind,
+            make_model(kind, **(model_options or {})),
+            mesh=mesh,
+            var_pts_extra=var_pts_extra,
         )
 
     def run(self, fit: dict, include_rests: bool = False) -> dict[str, pd.DataFrame]:
         """Step frames of ``cycle`` keyed by step name ("charge", "discharge" and, with
         ``include_rests``, "rest after charge" / "rest after discharge")."""
-        sol = self.sim.solve(inputs={n: float(fit[n]) for n in PARAM_NAMES})
+        sol = self.sim.solve(inputs={n: float(fit[n]) for n in self.input_names})
+        self.sim._solution = None  # the solution is tabulated below; keeping it leaks memory over a fit
         frames = solution_frames(sol, self.n_cycles, self.rate, include_rests=include_rests)
         return {f["step"].iloc[0]: f for f in frames if f["cycle"].iloc[0] == self.cycle}
 

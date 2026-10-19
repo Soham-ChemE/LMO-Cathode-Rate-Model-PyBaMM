@@ -56,18 +56,34 @@ def step_metrics(model: pd.DataFrame, meas, kind: str) -> dict:
     }
 
 
+def load_fit_all(kind: str, prefix: str = "") -> dict:
+    """All fitted parameters (v2.1 variants have more than the three of v1/v2)."""
+    with open(RESULTS_DIR / f"{prefix}fit_{kind.lower()}.json") as f:
+        d = json.load(f)
+    return {n: e["value"] for n, e in d["parameters"].items() if n != "tau_R2_over_Ds_s"}
+
+
 def predict_all(
-    kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DEFAULT_DISC_MM, save: bool = True, prefix: str = "", mesh: str = "v1"
+    kind: str = "SPMe",
+    fit: dict | None = None,
+    disc_mm: float = DEFAULT_DISC_MM,
+    save: bool = True,
+    prefix: str = "",
+    mesh: str = "v1",
+    sim_kwargs: dict | None = None,
 ) -> dict:
-    """``prefix``/``mesh`` select the v1 (default) or v2 ("v2_", "v2") parameters, mesh and output files."""
-    fit = fit or load_fit(kind, prefix)
+    """``prefix``/``mesh`` select the v1 (default) or v2 ("v2_", "v2") parameters, mesh and output
+    files; ``sim_kwargs`` (model options, parameter hook, extra inputs) selects a v2.1 variant."""
+    fit = fit or (load_fit_all(kind, prefix) if sim_kwargs else load_fit(kind, prefix))
     out = {"model": kind, "disc_mm": disc_mm, "parameters": fit, "rates": {}}
     if prefix:
         out["version"] = prefix.rstrip("_")
+    if sim_kwargs and sim_kwargs.get("model_options"):
+        out["model_options"] = sim_kwargs["model_options"]
     frames_out = []
     for rate in RATES:
         cyc = REPRESENTATIVE_CYCLE[rate]
-        sim = RateSimulator(rate, cyc, kind, disc_mm, mesh=mesh)
+        sim = RateSimulator(rate, cyc, kind, disc_mm, mesh=mesh, **(sim_kwargs or {}))
         frames = sim.run(fit)
         role = "training" if (rate, cyc) in TRAINING else ("blind prediction" if rate == "2C" else "low-rate check")
         entry = {"cycle": cyc, "role": role}
@@ -101,20 +117,26 @@ def predict_all(
 # ----------------------------------------------------------------------------- CV simulation
 
 
-def simulate_cv(scan: str, fit: dict, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, mesh: str = "v1") -> pd.DataFrame:
+def simulate_cv(
+    scan: str, fit: dict, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, mesh: str = "v1", sim_kwargs: dict | None = None
+) -> pd.DataFrame:
     """Drive the model with the measured voltage programme (both cycles) in voltage mode."""
     raw = load_cv(scan)
     t = raw["time_s"].to_numpy()
     v = raw["voltage_V"].to_numpy()
+    sim_kwargs = sim_kwargs or {}
+    core = {n: fit[n] for n in PARAM_NAMES}
+    extra_inputs = {n: float(fit[n]) for n in sim_kwargs.get("extra_inputs", ())}
     # Replace the first seconds (instrument inrush at 3.0 V) with the clean ramp.
-    params = build_parameters(disc_mm=disc_mm, initial_sto=ocv_to_sto(float(v[0])), v_min=2.0, v_max=5.5, **fit)
+    params = build_parameters(disc_mm=disc_mm, initial_sto=ocv_to_sto(float(v[0])), v_min=2.0, v_max=5.5, **core)
     params.update({"Voltage function [V]": lambda tt: pybamm.Interpolant(t, v, tt, name="measured CV programme")}, check_already_exists=False)
-    model = make_model(kind, **{"operating mode": "voltage"})
+    if sim_kwargs.get("param_hook"):
+        sim_kwargs["param_hook"](params)
+    model = make_model(kind, **{"operating mode": "voltage", **sim_kwargs.get("model_options", {})})
     extra = {} if mesh == "v1" else {"submesh_types": v2_submesh_types(model), "var_pts": V2_VAR_PTS}
-    sim = pybamm.Simulation(
-        model, parameter_values=params, solver=pybamm.IDAKLUSolver(rtol=1e-6, atol=1e-8), **{"var_pts": default_var_pts(), **extra}
-    )
-    sol = sim.solve(t_eval=[0, t[-1]], t_interp=t)
+    var_pts = {**default_var_pts(), **extra.pop("var_pts", {}), **sim_kwargs.get("var_pts_extra", {})}
+    sim = pybamm.Simulation(model, parameter_values=params, solver=pybamm.IDAKLUSolver(rtol=1e-6, atol=1e-8), var_pts=var_pts, **extra)
+    sol = sim.solve(t_eval=[0, t[-1]], t_interp=t, inputs=extra_inputs or None)
     df = pd.DataFrame(
         {
             "time_s": sol["Time [s]"].entries,
@@ -161,9 +183,15 @@ def randles_sevcik_D(peak_current_A, scan_rate_V_s, area_m2, conc_mol_m3, n: int
 
 
 def validate_cv(
-    kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DEFAULT_DISC_MM, save: bool = True, prefix: str = "", mesh: str = "v1"
+    kind: str = "SPMe",
+    fit: dict | None = None,
+    disc_mm: float = DEFAULT_DISC_MM,
+    save: bool = True,
+    prefix: str = "",
+    mesh: str = "v1",
+    sim_kwargs: dict | None = None,
 ) -> dict:
-    fit = fit or load_fit(kind, prefix)
+    fit = fit or (load_fit_all(kind, prefix) if sim_kwargs else load_fit(kind, prefix))
     geo = disc_geometry(disc_mm)
     from .ocv import LMO_C_MAX_MOL_M3, sto_window
 
@@ -174,7 +202,7 @@ def validate_cv(
     rates_m, iox_m, ired_m, iox_s, ired_s = [], [], [], [], []
     for scan, meta in CVS.items():
         meas = cv_peaks(scan, cycle=2)
-        df = simulate_cv(scan, fit, kind, disc_mm, mesh=mesh)
+        df = simulate_cv(scan, fit, kind, disc_mm, mesh=mesh, sim_kwargs=sim_kwargs)
         frames.append(df)
         simp = cv_peaks_from_frame(df, cycle=2)
         out["scans"][scan] = {

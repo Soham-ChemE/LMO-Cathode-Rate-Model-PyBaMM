@@ -251,18 +251,16 @@ def gcd_experiment(
     return pybamm.Experiment(cyc * n_cycles, period=f"{period_s} seconds")
 
 
-def make_simulation(experiment, params, kind: str = "SPMe", model=None, mesh: str = "v1") -> pybamm.Simulation:
-    """``mesh="v1"`` is the uniform mesh of the v1 fit; ``"v2"`` refines the particle surface."""
+def make_simulation(experiment, params, kind: str = "SPMe", model=None, mesh: str = "v1", var_pts_extra: dict | None = None) -> pybamm.Simulation:
+    """``mesh="v1"`` is the uniform mesh of the v1 fit; ``"v2"`` refines the particle surface.
+    ``var_pts_extra`` adds or overrides entries (e.g. the particle-size axis "R_p")."""
     model = model or make_model(kind)
     solver = pybamm.IDAKLUSolver(rtol=1e-6, atol=1e-8)
     extra = {} if mesh == "v1" else {"submesh_types": v2_submesh_types(model), "var_pts": V2_VAR_PTS}
-    return pybamm.Simulation(
-        model,
-        parameter_values=params,
-        experiment=experiment,
-        solver=solver,
-        **{"var_pts": default_var_pts(), **extra},
-    )
+    kwargs = {"var_pts": default_var_pts(), **extra}
+    if var_pts_extra:
+        kwargs["var_pts"] = {**kwargs["var_pts"], **var_pts_extra}
+    return pybamm.Simulation(model, parameter_values=params, experiment=experiment, solver=solver, **kwargs)
 
 
 def solve(experiment, params, kind: str = "SPMe", model=None, inputs=None) -> pybamm.Solution:
