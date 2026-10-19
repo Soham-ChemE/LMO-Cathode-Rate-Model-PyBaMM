@@ -43,7 +43,12 @@ def main(headline_kind="DFN"):
     ocv = load("ocv.json")
     meas = load("measured_summary.json")
     h = val[H]["headline"]
-    geo = sens[H]["discs"]["14.0"]["geometry"] if H in sens else None
+    sys.path.insert(0, str(ROOT / "src"))
+    from lmo.model import disc_geometry
+
+    geo = disc_geometry(14.0)
+    c10_current_mA = next(r for r in meas["gcd"] if r["rate"] == "C/10" and r["cycle"] == 2 and r["step"] == "discharge")["mean_current_mA"]
+    ir_c10_mV = 2 * c10_current_mA * fit[H]["parameters"]["R_contact"]["value"]
 
     # ---------------------------------------------------------------- results table
     rows = []
@@ -224,7 +229,7 @@ in the model.
 3. **Model** (`src/lmo/model.py`): PyBaMM `{H}` (and the other fidelity for comparison) with
    `working electrode = positive` and a contact resistance, starting from `Xu2019` for the lithium counter
    electrode, separator and electrolyte. Positive electrode: measured OCP, 85 µm, c_max = {ocv['lmo_c_max_mol_m3']:.0f} mol/m³
-   from the LMO density, 14 mm disc (ε_active = {geo['active_volume_fraction'] if geo else float('nan'):.2f}, porosity {geo['porosity'] if geo else float('nan'):.2f}),
+   from the LMO density, 14 mm disc (ε_active = {geo['active_volume_fraction']:.2f}, porosity {geo['porosity']:.2f}),
    25 °C, Butler-Volmer kinetics, 5 µm particles.
 4. **Fit** (`src/lmo/fit.py`): scipy `least_squares` in log10 space on the voltage-time curves of C/5 cycle 1
    and C/2 cycle 1 (charge and discharge, 300 points each), simulating the full charge/rest/discharge protocol
@@ -234,7 +239,7 @@ in the model.
    run's own first cycle (2C is simulated through its cycle 1 so that cycle 2 carries the right history); CVs
    simulated in voltage-control mode by feeding the model the measured voltage programme.
 6. **Diagnostics** (`src/lmo/diagnostics.py`): PyBaMM's voltage-component variables, checked to close to the
-   terminal voltage within {max(s['closure_max_abs_V'] for s in ov[H]['steps']) * 1e3:.1e} mV; CV b-values and Randles-Sevcik.
+   terminal voltage to better than {max(s['closure_max_abs_V'] for s in ov[H]['steps']) * 1e6:.0e} µV; CV b-values and Randles-Sevcik.
 7. **Reproduce**: `pip install -r requirements.txt && pip install -e . && make all` regenerates
    `data/processed/`, `results/*.json`, `figures/*.png` and this README (`python scripts/write_readme.py`).
    `make test` runs the parser tests. `python scripts/run_all.py --fast` skips the DFN.
@@ -247,8 +252,9 @@ in the model.
   carbonates with the `Xu2019` / Valoen2005 transport properties, and the lithium-metal kinetics are Xu2019's.
 - The fitted parameters are effective values: τ = R²/Ds at an assumed 5 µm radius, a rate constant that absorbs
   the unknown real surface area, and a contact resistance of about {fit[H]['parameters']['R_contact']['value']:.0f} Ω that lumps current-collector contact,
-  separator and lithium-metal interphase resistance. The C/10 hysteresis of {ocv['mean_charge_discharge_hysteresis_mV']:.0f} mV is consistent with a
-   resistance of that size at 0.14 mA.
+  separator and lithium-metal interphase resistance. The round-trip IR drop of that resistance at the C/10 current is {ir_c10_mV:.0f} mV, about half of the
+  {ocv['mean_charge_discharge_hysteresis_mV']:.0f} mV mean charge/discharge hysteresis measured at C/10; the rest is kinetic and intrinsic hysteresis
+  that the averaged pseudo-OCV absorbs.
 - The pseudo-OCV is a C/10 average, not a true equilibrium curve, and is linearly extrapolated outside the
   3.5 to 4.5 V window, so the parts of the CVs below 3.5 V and above 4.5 V (the 0.3 mV/s sweep went to 4.8 V)
   are outside the model's validity.
