@@ -515,9 +515,9 @@ size-distribution model has nothing left to trade off."""
         f"{'better' if improved else 'not an improvement'}, reported as it came out."
     )
     bullet = (
-        f"- Diagnosed the model class from the rests and fixed it (v2.1): adding double-layer capacitance let the same data\n"
-        f"  identify the contact resistance ({p21['R_contact']['value']:.0f} Ω against the model-free {R_free_chg:.0f} Ω) and halved the rest misfit; the blind 2C\n"
-        f"  capacity error went from {e1['capacity_error_pct']:+.1f} % (v1) to {e21['capacity_error_pct']:+.1f} % (v2.1), reported without any tuning on 2C.\n"
+        f"- Diagnosed the model class from the rests and changed it (v2.1): adding double-layer capacitance let the same data\n"
+        f"  fit the rests to {1000 * f21['training_rmse_rests_V']:.0f} mV with a contact resistance of {p21['R_contact']['value']:.0f} Ω (leave-one-out {p21['R_contact']['leave_one_step_out_min']:.0f} to {p21['R_contact']['leave_one_step_out_max']:.0f} Ω, still above the\n"
+        f"  model-free {R_free_chg:.0f} Ω jump); the blind 2C capacity error went from {e1['capacity_error_pct']:+.1f} % (v1) to {e21['capacity_error_pct']:+.1f} % (v2.1), reported without any tuning on 2C.\n"
     )
     return {"section": section, "next_step": next_step, "key_bullet": key_bullet, "bullet": bullet}
 

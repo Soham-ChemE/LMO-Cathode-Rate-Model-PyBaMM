@@ -17,6 +17,6 @@ Every number below is read from `results/*.json`.
   rests' log-time relaxation is outside the model class (no double layer, one particle size), so the 2C error went
   from +20.1 % to -16.3 %; identified double-layer capacitance and a particle-size distribution as the
   model additions that would use the rests.
-- Diagnosed the model class from the rests and fixed it (v2.1): adding double-layer capacitance let the same data
-  identify the contact resistance (89 Ω against the model-free 72 Ω) and halved the rest misfit; the blind 2C
-  capacity error went from +20.1 % (v1) to +27.1 % (v2.1), reported without any tuning on 2C.
+- Diagnosed the model class from the rests and changed it (v2.1): adding double-layer capacitance let the same data
+  fit the rests to 15 mV with a contact resistance of 89 Ω (leave-one-out 74 to 104 Ω, still above the
+  model-free 72 Ω jump); the blind 2C capacity error went from +20.1 % (v1) to +27.1 % (v2.1), reported without any tuning on 2C.
