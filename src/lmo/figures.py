@@ -24,13 +24,13 @@ COMPONENT_LABELS = {
 COMPONENT_COLORS = ["#7f7f7f", "#ff7f0e", "#17becf", "#bcbd22", "#8c564b", "#e377c2"]
 
 
-def _model_frames(kind):
-    return pd.read_csv(PROCESSED_DIR / f"model_gcd_{kind.lower()}.csv")
+def _model_frames(kind, prefix=""):
+    return pd.read_csv(PROCESSED_DIR / f"{prefix}model_gcd_{kind.lower()}.csv")
 
 
-def fig_headline(kind: str = "DFN"):
-    df = _model_frames(kind)
-    val = json.load(open(RESULTS_DIR / f"validation_{kind.lower()}.json"))
+def fig_headline(kind: str = "DFN", prefix: str = ""):
+    df = _model_frames(kind, prefix)
+    val = json.load(open(RESULTS_DIR / f"{prefix}validation_{kind.lower()}.json"))
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.2), sharey=True)
     for ax, step in zip(axes, ("discharge", "charge")):
         for rate in RATES:
@@ -48,12 +48,13 @@ def fig_headline(kind: str = "DFN"):
     axes[0].set_ylim(3.4, 4.6)
     axes[0].legend(fontsize=7.5, ncol=2, loc="lower left")
     h = val["headline"]
+    trained = "C/5 and C/2 curves plus the C/10, C/5, C/2 rests (v2)" if prefix else "C/5 and C/2 only"
     fig.suptitle(
-        f"LiMn$_2$O$_4$ half cell: measured vs {kind} fitted on C/5 and C/2 only. "
+        f"LiMn$_2$O$_4$ half cell: measured vs {kind} fitted on {trained}. "
         f"2C prediction: {h['predicted_mAh']:.3f} mAh vs {h['measured_mAh']:.3f} measured ({h['error_pct']:+.1f}%)",
         fontsize=10,
     )
-    return savefig(fig, "headline_measured_vs_model")
+    return savefig(fig, f"{prefix}headline_measured_vs_model")
 
 
 def fig_fit_time(kind: str):
@@ -103,9 +104,9 @@ def fig_ocv():
     return savefig(fig, "pseudo_ocv_and_dqdv")
 
 
-def fig_overpotentials(kind: str):
-    ov = json.load(open(RESULTS_DIR / f"overpotentials_{kind.lower()}.json"))
-    bd = pd.read_csv(PROCESSED_DIR / f"overpotentials_{kind.lower()}.csv")
+def fig_overpotentials(kind: str, prefix: str = ""):
+    ov = json.load(open(RESULTS_DIR / f"{prefix}overpotentials_{kind.lower()}.json"))
+    bd = pd.read_csv(PROCESSED_DIR / f"{prefix}overpotentials_{kind.lower()}.csv")
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     ax = axes[0]
     dis = [s for s in ov["steps"] if s["step"] == "discharge"]
@@ -119,7 +120,7 @@ def fig_overpotentials(kind: str):
     for xi, rate in zip(x, [s["rate"] for s in dis]):
         ax.get_xticklabels()[xi].set_color(COLORS[rate])
     ax.set_ylabel("Capacity-weighted mean voltage loss on discharge (mV)")
-    ax.set_title(f"Overpotential breakdown ({kind})")
+    ax.set_title(f"Overpotential breakdown ({kind}{', v2' if prefix else ''})")
     ax.legend(fontsize=8)
     ax = axes[1]
     sel = bd[(bd["rate"] == "2C") & (bd["step"] == "discharge")]
@@ -139,12 +140,12 @@ def fig_overpotentials(kind: str):
     ax.set_ylim(3.3, 4.3)
     ax.legend(fontsize=7.5, loc="upper right")
     fig.tight_layout()
-    return savefig(fig, f"overpotentials_{kind.lower()}")
+    return savefig(fig, f"{prefix}overpotentials_{kind.lower()}")
 
 
-def fig_cv(kind: str):
-    sim = pd.read_csv(PROCESSED_DIR / f"model_cv_{kind.lower()}.csv")
-    cv = json.load(open(RESULTS_DIR / f"cv_{kind.lower()}.json"))
+def fig_cv(kind: str, prefix: str = ""):
+    sim = pd.read_csv(PROCESSED_DIR / f"{prefix}model_cv_{kind.lower()}.csv")
+    cv = json.load(open(RESULTS_DIR / f"{prefix}cv_{kind.lower()}.json"))
     fig, axes = plt.subplots(1, 4, figsize=(15, 3.9))
     for ax, scan in zip(axes[:3], CVS):
         m = cv_cycle(scan, 2)
@@ -171,7 +172,7 @@ def fig_cv(kind: str):
     ax.set_title("b-value: log i$_p$ vs log v")
     ax.legend(fontsize=6.5, ncol=2)
     fig.tight_layout()
-    return savefig(fig, f"cv_{kind.lower()}")
+    return savefig(fig, f"{prefix}cv_{kind.lower()}")
 
 
 def fig_sensitivity(kind: str = "SPMe"):

@@ -68,9 +68,12 @@ def summarise_step(step: pd.DataFrame, rate: str) -> dict:
     return res
 
 
-def run(kind: str = "SPMe") -> dict:
-    df = pd.read_csv(PROCESSED_DIR / f"model_gcd_{kind.lower()}.csv")
+def run(kind: str = "SPMe", prefix: str = "") -> dict:
+    """``prefix="v2_"`` reads and writes the v2 files."""
+    df = pd.read_csv(PROCESSED_DIR / f"{prefix}model_gcd_{kind.lower()}.csv")
     out = {"model": kind, "components": list(COMPONENTS), "steps": []}
+    if prefix:
+        out["version"] = prefix.rstrip("_")
     frames = []
     for rate in RATES:
         for step_kind in ("discharge", "charge"):
@@ -82,7 +85,7 @@ def run(kind: str = "SPMe") -> dict:
             bd["rate"] = rate
             bd["step"] = step_kind
             frames.append(bd)
-    pd.concat(frames).to_csv(PROCESSED_DIR / f"overpotentials_{kind.lower()}.csv", index=False)
+    pd.concat(frames).to_csv(PROCESSED_DIR / f"{prefix}overpotentials_{kind.lower()}.csv", index=False)
     dis = {s["rate"]: s for s in out["steps"] if s["step"] == "discharge"}
     out["discharge_mean_loss_mV"] = {r: s["total_mean_mV"] for r, s in dis.items()}
     out["discharge_dominant_term"] = {r: max(s["capacity_weighted_mean_mV"], key=s["capacity_weighted_mean_mV"].get) for r, s in dis.items()}
@@ -93,7 +96,7 @@ def run(kind: str = "SPMe") -> dict:
         "bulk_ocv_at_cutoff_V": dis["2C"]["bulk_ocv_at_cutoff_V"],
         "capacity_locked_out_mAh": dis["2C"]["model_capacity_locked_out_mAh"],
     }
-    with open(RESULTS_DIR / f"overpotentials_{kind.lower()}.json", "w") as f:
+    with open(RESULTS_DIR / f"{prefix}overpotentials_{kind.lower()}.json", "w") as f:
         json.dump(out, f, indent=2)
     return out
 

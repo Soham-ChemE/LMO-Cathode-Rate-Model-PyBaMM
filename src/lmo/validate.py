@@ -16,11 +16,12 @@ import pybamm
 from . import CVS, PROCESSED_DIR, RATES, REPRESENTATIVE_CYCLE, RESULTS_DIR
 from .fit import PARAM_NAMES, RateSimulator, TRAINING, fit_parameters, unpack
 from .io import cv_cycle, cv_peaks, get_step, load_cv
-from .model import DEFAULT_DISC_MM, build_parameters, default_var_pts, disc_geometry, make_model, ocv_to_sto
+from .model import DEFAULT_DISC_MM, V2_VAR_PTS, build_parameters, default_var_pts, disc_geometry, make_model, ocv_to_sto, v2_submesh_types
 
 
-def load_fit(kind: str) -> dict:
-    with open(RESULTS_DIR / f"fit_{kind.lower()}.json") as f:
+def load_fit(kind: str, prefix: str = "") -> dict:
+    """Fitted parameters of ``fit_<kind>.json`` (v1) or ``v2_fit_<kind>.json`` (prefix "v2_")."""
+    with open(RESULTS_DIR / f"{prefix}fit_{kind.lower()}.json") as f:
         d = json.load(f)
     return {n: d["parameters"][n]["value"] for n in PARAM_NAMES}
 
@@ -55,13 +56,18 @@ def step_metrics(model: pd.DataFrame, meas, kind: str) -> dict:
     }
 
 
-def predict_all(kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DEFAULT_DISC_MM, save: bool = True) -> dict:
-    fit = fit or load_fit(kind)
+def predict_all(
+    kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DEFAULT_DISC_MM, save: bool = True, prefix: str = "", mesh: str = "v1"
+) -> dict:
+    """``prefix``/``mesh`` select the v1 (default) or v2 ("v2_", "v2") parameters, mesh and output files."""
+    fit = fit or load_fit(kind, prefix)
     out = {"model": kind, "disc_mm": disc_mm, "parameters": fit, "rates": {}}
+    if prefix:
+        out["version"] = prefix.rstrip("_")
     frames_out = []
     for rate in RATES:
         cyc = REPRESENTATIVE_CYCLE[rate]
-        sim = RateSimulator(rate, cyc, kind, disc_mm)
+        sim = RateSimulator(rate, cyc, kind, disc_mm, mesh=mesh)
         frames = sim.run(fit)
         role = "training" if (rate, cyc) in TRAINING else ("blind prediction" if rate == "2C" else "low-rate check")
         entry = {"cycle": cyc, "role": role}
@@ -86,8 +92,8 @@ def predict_all(kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DE
     }
     if save:
         PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-        pd.concat(frames_out).to_csv(PROCESSED_DIR / f"model_gcd_{kind.lower()}.csv", index=False)
-        with open(RESULTS_DIR / f"validation_{kind.lower()}.json", "w") as f:
+        pd.concat(frames_out).to_csv(PROCESSED_DIR / f"{prefix}model_gcd_{kind.lower()}.csv", index=False)
+        with open(RESULTS_DIR / f"{prefix}validation_{kind.lower()}.json", "w") as f:
             json.dump(out, f, indent=2)
     return out
 
@@ -95,7 +101,7 @@ def predict_all(kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DE
 # ----------------------------------------------------------------------------- CV simulation
 
 
-def simulate_cv(scan: str, fit: dict, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM) -> pd.DataFrame:
+def simulate_cv(scan: str, fit: dict, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, mesh: str = "v1") -> pd.DataFrame:
     """Drive the model with the measured voltage programme (both cycles) in voltage mode."""
     raw = load_cv(scan)
     t = raw["time_s"].to_numpy()
@@ -104,7 +110,10 @@ def simulate_cv(scan: str, fit: dict, kind: str = "SPMe", disc_mm: float = DEFAU
     params = build_parameters(disc_mm=disc_mm, initial_sto=ocv_to_sto(float(v[0])), v_min=2.0, v_max=5.5, **fit)
     params.update({"Voltage function [V]": lambda tt: pybamm.Interpolant(t, v, tt, name="measured CV programme")}, check_already_exists=False)
     model = make_model(kind, **{"operating mode": "voltage"})
-    sim = pybamm.Simulation(model, parameter_values=params, solver=pybamm.IDAKLUSolver(rtol=1e-6, atol=1e-8), var_pts=default_var_pts())
+    extra = {} if mesh == "v1" else {"submesh_types": v2_submesh_types(model), "var_pts": V2_VAR_PTS}
+    sim = pybamm.Simulation(
+        model, parameter_values=params, solver=pybamm.IDAKLUSolver(rtol=1e-6, atol=1e-8), **{"var_pts": default_var_pts(), **extra}
+    )
     sol = sim.solve(t_eval=[0, t[-1]], t_interp=t)
     df = pd.DataFrame(
         {
@@ -151,8 +160,10 @@ def randles_sevcik_D(peak_current_A, scan_rate_V_s, area_m2, conc_mol_m3, n: int
     return float((abs(peak_current_A) / pref) ** 2)
 
 
-def validate_cv(kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DEFAULT_DISC_MM, save: bool = True) -> dict:
-    fit = fit or load_fit(kind)
+def validate_cv(
+    kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DEFAULT_DISC_MM, save: bool = True, prefix: str = "", mesh: str = "v1"
+) -> dict:
+    fit = fit or load_fit(kind, prefix)
     geo = disc_geometry(disc_mm)
     from .ocv import LMO_C_MAX_MOL_M3, sto_window
 
@@ -163,7 +174,7 @@ def validate_cv(kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DE
     rates_m, iox_m, ired_m, iox_s, ired_s = [], [], [], [], []
     for scan, meta in CVS.items():
         meas = cv_peaks(scan, cycle=2)
-        df = simulate_cv(scan, fit, kind, disc_mm)
+        df = simulate_cv(scan, fit, kind, disc_mm, mesh=mesh)
         frames.append(df)
         simp = cv_peaks_from_frame(df, cycle=2)
         out["scans"][scan] = {
@@ -206,8 +217,8 @@ def validate_cv(kind: str = "SPMe", fit: dict | None = None, disc_mm: float = DE
     }
     out["randles_sevcik"]["ratio_apparent_to_fitted"] = out["randles_sevcik"]["apparent_D_geometric_mean_m2_s"] / fit["Ds"]
     if save:
-        pd.concat(frames).to_csv(PROCESSED_DIR / f"model_cv_{kind.lower()}.csv", index=False)
-        with open(RESULTS_DIR / f"cv_{kind.lower()}.json", "w") as f:
+        pd.concat(frames).to_csv(PROCESSED_DIR / f"{prefix}model_cv_{kind.lower()}.csv", index=False)
+        with open(RESULTS_DIR / f"{prefix}cv_{kind.lower()}.json", "w") as f:
             json.dump(out, f, indent=2)
     return out
 
