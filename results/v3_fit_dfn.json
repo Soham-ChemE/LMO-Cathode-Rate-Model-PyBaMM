@@ -1,0 +1,480 @@
+{
+  "version": "v3",
+  "variant": "dl+ox",
+  "model_options": {
+    "surface form": "differential",
+    "positive electrode oxidation": "Tafel"
+  },
+  "side_reaction": "j_ox = j_ref exp(alpha_ox F (phi_s - phi_e - 4.5) / RT) on the positive particle surface",
+  "model": "DFN",
+  "disc_mm": 10.0,
+  "training_curves": [
+    "C/5 cycle 1 charge+discharge",
+    "C/2 cycle 1 charge+discharge"
+  ],
+  "training_rests": [
+    "C/10 cycle 1 rest after charge",
+    "C/10 cycle 1 rest after discharge",
+    "C/5 cycle 1 rest after charge",
+    "C/5 cycle 1 rest after discharge",
+    "C/2 cycle 1 rest after charge",
+    "C/2 cycle 1 rest after discharge"
+  ],
+  "training_excess_charge": [
+    "C/10 cycle 1 charge minus discharge capacity",
+    "C/5 cycle 1 charge minus discharge capacity"
+  ],
+  "two_c_used": false,
+  "particle_radius_m": 5e-06,
+  "weighting": {
+    "lambda": 1.0,
+    "rest_weight": 3.4469099377285564,
+    "rest_points": "every logged sample of each rest",
+    "n_curve_points": 1200,
+    "n_rest_points": 101,
+    "excess_lambda": 1.0,
+    "excess_tolerance_relative": 0.3,
+    "excess_weight_per_mAh": {
+      "C/10": 14.870339711314587,
+      "C/5": 61.06536039415908
+    },
+    "excess_rule": "w = sqrt(lambda_q N_curve / N_q) * 25 mV / (tolerance * measured excess): the constraint block carries the curve block's weight when each excess misses by the tolerance"
+  },
+  "training_rmse_curves_V": 0.02584087350305167,
+  "training_rmse_rests_V": 0.014428895395401244,
+  "training_rmse_rest_traces_V": 0.014428895395401244,
+  "training_rmse_rests_after_charge_V": 0.020972439721143616,
+  "training_rmse_rests_after_discharge_V": 0.008274509141830073,
+  "training_rmse_per_block_mV": {
+    "C/5 charge": 19.138956105733453,
+    "C/5 discharge": 26.85570616860835,
+    "C/2 charge": 23.044592123556072,
+    "C/2 discharge": 32.44104117980785,
+    "C/10 rest after charge": 25.420201662794966,
+    "C/10 rest after discharge": 3.8806392273134103,
+    "C/5 rest after charge": 23.16361259334079,
+    "C/5 rest after discharge": 6.755996254463376,
+    "C/2 rest after charge": 14.53124013915027,
+    "C/2 rest after discharge": 11.493339136581982
+  },
+  "excess_charge_mAh": {
+    "C/10": {
+      "model": 0.13731561814691218,
+      "measured": 0.1372693221504664,
+      "error": 4.6295996445788745e-05
+    },
+    "C/5": {
+      "model": 0.0331177863941885,
+      "measured": 0.03342715803433727,
+      "error": -0.00030937164014877006
+    }
+  },
+  "weighted_rmse_V": 0.028407325273746918,
+  "n_residuals": 1303,
+  "fit_time_s": 181.8497290611267,
+  "converged": true,
+  "starts_tried": [
+    {
+      "start": {
+        "Ds": 2.2251505347722235e-14,
+        "k": 1.3537166229664624e-11,
+        "R_contact": 92.89106860753147,
+        "C_dl": 3.354232750475582,
+        "j_ref": 0.0924093023860605,
+        "alpha_ox": 0.25257709897139485
+      },
+      "cost": 1.0514898963586239,
+      "optimum": {
+        "Ds": 2.2194038290536152e-14,
+        "k": 1.3536140081611081e-11,
+        "R_contact": 92.90597163698433,
+        "C_dl": 3.3667727498417737,
+        "j_ref": 0.09241522420161144,
+        "alpha_ox": 0.252653607081914
+      }
+    }
+  ],
+  "parameters": {
+    "Ds": {
+      "value": 2.2194038290536152e-14,
+      "log10": -13.653763669028447,
+      "sd_log10_jacobian": 0.01974872996943399,
+      "ci95_low_jacobian": 2.0301532384604106e-14,
+      "ci95_high_jacobian": 2.4262963322676812e-14,
+      "leave_one_step_out_min": 1.163937628912708e-14,
+      "leave_one_step_out_max": 3.6440811942161456e-14,
+      "unit": "m2/s"
+    },
+    "k": {
+      "value": 1.3536140081611081e-11,
+      "log10": -10.868505159893415,
+      "sd_log10_jacobian": 0.04136889061690716,
+      "ci95_low_jacobian": 1.1230828993443479e-11,
+      "ci95_high_jacobian": 1.6314653924119528e-11,
+      "leave_one_step_out_min": 7.214964011377459e-12,
+      "leave_one_step_out_max": 4.522682481783315e-11,
+      "unit": "m^2.5/(mol^0.5 s) in j0 = k F sqrt(c_e c_s (c_max - c_s))"
+    },
+    "R_contact": {
+      "value": 92.90597163698433,
+      "log10": 1.968043629662533,
+      "sd_log10_jacobian": 0.012663840744024293,
+      "ci95_low_jacobian": 87.74502495112614,
+      "ci95_high_jacobian": 98.37047252103332,
+      "leave_one_step_out_min": 70.56199155754327,
+      "leave_one_step_out_max": 106.55852518973664,
+      "unit": "Ohm"
+    },
+    "C_dl": {
+      "value": 3.3667727498417737,
+      "log10": 0.5272138034030999,
+      "sd_log10_jacobian": 0.015200178029169223,
+      "ci95_low_jacobian": 3.1435578319657145,
+      "ci95_high_jacobian": 3.6058375111836547,
+      "leave_one_step_out_min": 2.61182435889807,
+      "leave_one_step_out_max": 4.407520478672451,
+      "unit": "F/m2 of particle surface (effective; absorbs the unknown real surface area)"
+    },
+    "j_ref": {
+      "value": 0.09241522420161144,
+      "log10": -1.034256478540515,
+      "sd_log10_jacobian": 0.001986144154688079,
+      "ci95_low_jacobian": 0.09159055252182342,
+      "ci95_high_jacobian": 0.0932473211382706,
+      "leave_one_step_out_min": 0.08991411538640424,
+      "leave_one_step_out_max": 0.12176148086256232,
+      "unit": "A/m2 of particle surface at 4.5 V (effective; absorbs the unknown real surface area)"
+    },
+    "alpha_ox": {
+      "value": 0.252653607081914,
+      "log10": -0.5974744970513656,
+      "sd_log10_jacobian": 0.0019900004701536274,
+      "ci95_low_jacobian": 0.2503946826579758,
+      "ci95_high_jacobian": 0.25493291029145126,
+      "leave_one_step_out_min": 0.24946795088277987,
+      "leave_one_step_out_max": 0.2795776434200404,
+      "unit": "transfer coefficient of the oxidation; Tafel slope = 59 mV / alpha_ox per decade"
+    },
+    "tau_R2_over_Ds_s": {
+      "value": 1126.4286234317417,
+      "ci95_low_jacobian": 1030.377026397033,
+      "ci95_high_jacobian": 1231.4341364181469,
+      "leave_one_step_out_min": 686.0439893512743,
+      "leave_one_step_out_max": 2147.8814138308894
+    }
+  },
+  "log10_correlation": {
+    "Ds-k": -0.3229591235775424,
+    "Ds-R_contact": -0.0972336121607545,
+    "Ds-C_dl": -0.4682989288268063,
+    "Ds-j_ref": -0.12602802247100992,
+    "Ds-alpha_ox": -0.37562116074043705,
+    "k-R_contact": 0.8638079346801817,
+    "k-C_dl": 0.5805202403667609,
+    "k-j_ref": 0.8159025350725776,
+    "k-alpha_ox": 0.07710370845616876,
+    "R_contact-C_dl": 0.5584904438009565,
+    "R_contact-j_ref": 0.9348275198567838,
+    "R_contact-alpha_ox": 0.00898416673461906,
+    "C_dl-j_ref": 0.4825719194573793,
+    "C_dl-alpha_ox": 0.053654623479547275,
+    "j_ref-alpha_ox": 0.30051078290181116
+  },
+  "leakage_current": {
+    "particle_surface_area_m2": 0.0018275276125743413,
+    "tafel_slope_mV_per_decade": 234.1520090253102,
+    "current_at_reference_potential_mA": 0.16889137405069343,
+    "current_mA_vs_surface_potential_V": {
+      "3.5": 9.054771799491513e-06,
+      "3.8": 0.00017302007558972078,
+      "4.0": 0.0012366377201636668,
+      "4.2": 0.008838701784860657,
+      "4.3": 0.023629877876307517,
+      "4.4": 0.06317343225739515,
+      "4.5": 0.16889137405069343,
+      "4.6": 0.4515236106297226,
+      "4.7": 1.2071283811979032,
+      "4.8": 3.227204279885197
+    },
+    "leave_one_out_current_at_reference_potential_mA": [
+      0.1694913592359644,
+      0.17189641738049494,
+      0.1654504645114183,
+      0.17236332889607525,
+      0.16845921434988886,
+      0.16834048983409666,
+      0.16792215019983273,
+      0.1690392159079239,
+      0.17164157067768818,
+      0.16432052862884922,
+      0.22252246842427487,
+      0.16991488159115786
+    ],
+    "leave_one_out_tafel_slope_mV_per_decade": [
+      230.12781808752376,
+      227.3679792588691,
+      237.14208368801383,
+      233.6083875168198,
+      234.56209042254136,
+      233.74610351546394,
+      235.54077669871378,
+      234.98561529155097,
+      229.72383550502485,
+      224.79806143761394,
+      211.602576522329,
+      227.94512871092107
+    ]
+  },
+  "rest_jumps": {
+    "C/10 rest after charge": {
+      "current_mA": 0.1466875751679145,
+      "first_sample_delay_s": 0.04840000015246915,
+      "jump_measured_mV": 10.367800000000038,
+      "jump_model_mV": 15.642412279805562,
+      "instantaneous_resistance_measured_ohm": 70.67946953333934,
+      "instantaneous_resistance_model_ohm": 106.6376089583563,
+      "relaxation_30s_measured_mV": 72.55410000000052,
+      "relaxation_30s_model_mV": 38.770245604868414,
+      "end_of_rest_error_mV": 33.783854395132096
+    },
+    "C/10 rest after discharge": {
+      "current_mA": 0.1402053092400055,
+      "first_sample_delay_s": 0.048399987164884806,
+      "jump_measured_mV": 13.786100000000356,
+      "jump_model_mV": 14.781904169082427,
+      "instantaneous_resistance_measured_ohm": 98.32794545890634,
+      "instantaneous_resistance_model_ohm": 105.43041664548201,
+      "relaxation_30s_measured_mV": 173.08240000000018,
+      "relaxation_30s_model_mV": 171.33674497949292,
+      "end_of_rest_error_mV": -1.7456550205072752
+    },
+    "C/5 rest after charge": {
+      "current_mA": 0.2871264976975961,
+      "first_sample_delay_s": 0.0483999993884936,
+      "jump_measured_mV": 19.31620000000045,
+      "jump_model_mV": 30.61574449109461,
+      "instantaneous_resistance_measured_ohm": 67.27418108357392,
+      "instantaneous_resistance_model_ohm": 106.62807068172215,
+      "relaxation_30s_measured_mV": 104.74780000000017,
+      "relaxation_30s_model_mV": 72.55875689195435,
+      "end_of_rest_error_mV": 32.18904310804582
+    },
+    "C/5 rest after discharge": {
+      "current_mA": 0.2863935096132857,
+      "first_sample_delay_s": 0.04840000014519319,
+      "jump_measured_mV": 26.39979999999964,
+      "jump_model_mV": 30.37770480866442,
+      "instantaneous_resistance_measured_ohm": 92.1801616092733,
+      "instantaneous_resistance_model_ohm": 106.06980880845775,
+      "relaxation_30s_measured_mV": 226.6608999999997,
+      "relaxation_30s_model_mV": 208.97501340156666,
+      "end_of_rest_error_mV": -17.685886598433065
+    },
+    "C/2 rest after charge": {
+      "current_mA": 0.717257040977103,
+      "first_sample_delay_s": 0.04839999941759743,
+      "jump_measured_mV": 50.232799999999855,
+      "jump_model_mV": 76.38289593156777,
+      "instantaneous_resistance_measured_ohm": 70.03458611095523,
+      "instantaneous_resistance_model_ohm": 106.49305837069663,
+      "relaxation_30s_measured_mV": 171.3786000000006,
+      "relaxation_30s_model_mV": 183.5192925272171,
+      "end_of_rest_error_mV": -12.140692527216501
+    },
+    "C/2 rest after discharge": {
+      "current_mA": 0.7165621104061113,
+      "first_sample_delay_s": 0.04839999941032147,
+      "jump_measured_mV": 72.55840000000013,
+      "jump_model_mV": 76.46567660629167,
+      "instantaneous_resistance_measured_ohm": 101.259052001616,
+      "instantaneous_resistance_model_ohm": 106.71186139461766,
+      "relaxation_30s_measured_mV": 285.36440000000016,
+      "relaxation_30s_model_mV": 306.05825833706876,
+      "end_of_rest_error_mV": 20.693858337068605
+    }
+  },
+  "leave_one_step_out": [
+    {
+      "Ds": 1.7913513786248512e-14,
+      "k": 1.4665004169614985e-11,
+      "R_contact": 93.28928248330492,
+      "C_dl": 3.6215148195707196,
+      "j_ref": 0.09274352850801029,
+      "alpha_ox": 0.2570717011848677,
+      "dropped": "C/5 charge"
+    },
+    {
+      "Ds": 1.163937628912708e-14,
+      "k": 4.084121865294834e-11,
+      "R_contact": 103.33988879272151,
+      "C_dl": 4.407520478672451,
+      "j_ref": 0.0940595459120607,
+      "alpha_ox": 0.26019208983849834,
+      "dropped": "C/5 discharge"
+    },
+    {
+      "Ds": 3.6440811942161456e-14,
+      "k": 7.214964011377459e-12,
+      "R_contact": 79.46669986340288,
+      "C_dl": 2.61182435889807,
+      "j_ref": 0.09053240201298901,
+      "alpha_ox": 0.24946795088277987,
+      "dropped": "C/2 charge"
+    },
+    {
+      "Ds": 2.168267621403535e-14,
+      "k": 4.522682481783315e-11,
+      "R_contact": 106.55852518973664,
+      "C_dl": 3.579671899195044,
+      "j_ref": 0.0943150339891588,
+      "alpha_ox": 0.2532415480221661,
+      "dropped": "C/2 discharge"
+    },
+    {
+      "Ds": 2.2926716047465787e-14,
+      "k": 1.2979863689754963e-11,
+      "R_contact": 91.31571725386047,
+      "C_dl": 3.2899672225559446,
+      "j_ref": 0.09217875187811214,
+      "alpha_ox": 0.25221189655647913,
+      "dropped": "C/10 rest after charge"
+    },
+    {
+      "Ds": 2.1590989090687277e-14,
+      "k": 1.2758185548242977e-11,
+      "R_contact": 90.43491594741636,
+      "C_dl": 3.205543088842958,
+      "j_ref": 0.09211378732437556,
+      "alpha_ox": 0.25309234590859264,
+      "dropped": "C/10 rest after discharge"
+    },
+    {
+      "Ds": 2.543337143321119e-14,
+      "k": 1.2155501929453295e-11,
+      "R_contact": 89.41149326195207,
+      "C_dl": 3.1362876976723473,
+      "j_ref": 0.09188487716652866,
+      "alpha_ox": 0.251163940761704,
+      "dropped": "C/5 rest after charge"
+    },
+    {
+      "Ds": 2.382473628916929e-14,
+      "k": 1.3541885965412225e-11,
+      "R_contact": 93.87646403832217,
+      "C_dl": 3.3732922348917547,
+      "j_ref": 0.09249612139638608,
+      "alpha_ox": 0.25175732400607337,
+      "dropped": "C/5 rest after discharge"
+    },
+    {
+      "Ds": 1.722761752858791e-14,
+      "k": 1.9321873539862893e-11,
+      "R_contact": 101.74113802127019,
+      "C_dl": 3.8314098607859814,
+      "j_ref": 0.09392009701889308,
+      "alpha_ox": 0.2575237765626958,
+      "dropped": "C/2 rest after charge"
+    },
+    {
+      "Ds": 1.3233427995793359e-14,
+      "k": 8.894382723497591e-12,
+      "R_contact": 70.56199155754327,
+      "C_dl": 3.6619810974906484,
+      "j_ref": 0.08991411538640424,
+      "alpha_ox": 0.26316663634637005,
+      "dropped": "C/2 rest after discharge"
+    },
+    {
+      "Ds": 2.0484286712793197e-14,
+      "k": 1.4063449920849316e-11,
+      "R_contact": 92.6718196612807,
+      "C_dl": 3.4713062980179648,
+      "j_ref": 0.12176148086256232,
+      "alpha_ox": 0.2795776434200404,
+      "dropped": "C/10 excess charge"
+    },
+    {
+      "Ds": 2.167970098595695e-14,
+      "k": 1.3568226153937653e-11,
+      "R_contact": 92.83609714193118,
+      "C_dl": 3.387344536267384,
+      "j_ref": 0.09297527458521285,
+      "alpha_ox": 0.2595332921579873,
+      "dropped": "C/5 excess charge"
+    }
+  ],
+  "coulombic_efficiency": {
+    "C/10 cycle 1": {
+      "role": "training (excess-charge constraint)",
+      "charge_mAh_model": 1.529428846600846,
+      "charge_mAh_measured": 1.566811429566496,
+      "discharge_mAh_model": 1.392113228453934,
+      "discharge_mAh_measured": 1.4295421074160297,
+      "excess_mAh_model": 0.13731561814691218,
+      "excess_mAh_measured": 0.1372693221504664,
+      "coulombic_efficiency_model": 0.9102177139838208,
+      "coulombic_efficiency_measured": 0.9123893791172777
+    },
+    "C/10 cycle 2": {
+      "role": "check",
+      "charge_mAh_model": 1.5363943051231543,
+      "charge_mAh_measured": 1.5051125644749301,
+      "discharge_mAh_model": 1.3921115432283848,
+      "discharge_mAh_measured": 1.42187761797334,
+      "excess_mAh_model": 0.14428276189476952,
+      "excess_mAh_measured": 0.08323494650159025,
+      "coulombic_efficiency_model": 0.9060900177684503,
+      "coulombic_efficiency_measured": 0.944698523906996
+    },
+    "C/5 cycle 1": {
+      "role": "training (excess-charge constraint)",
+      "charge_mAh_model": 1.434618809747331,
+      "charge_mAh_measured": 1.4554614358411027,
+      "discharge_mAh_model": 1.4015010233531424,
+      "discharge_mAh_measured": 1.4220342778067654,
+      "excess_mAh_model": 0.0331177863941885,
+      "excess_mAh_measured": 0.03342715803433727,
+      "coulombic_efficiency_model": 0.9769152710328528,
+      "coulombic_efficiency_measured": 0.9770332918405221
+    },
+    "C/5 cycle 2": {
+      "role": "check",
+      "charge_mAh_model": 1.4405361594804726,
+      "charge_mAh_measured": 1.4329961557226596,
+      "discharge_mAh_model": 1.4014992870779237,
+      "discharge_mAh_measured": 1.4169044358735507,
+      "excess_mAh_model": 0.03903687240254894,
+      "excess_mAh_measured": 0.016091719849108843,
+      "coulombic_efficiency_model": 0.9729011506267031,
+      "coulombic_efficiency_measured": 0.9887705770983078
+    },
+    "C/2 cycle 1": {
+      "role": "check",
+      "charge_mAh_model": 1.3915936562095674,
+      "charge_mAh_measured": 1.3899376992046266,
+      "discharge_mAh_model": 1.3848637010364024,
+      "discharge_mAh_measured": 1.361466455297465,
+      "excess_mAh_model": 0.006729955173164992,
+      "excess_mAh_measured": 0.028471243907161714,
+      "coulombic_efficiency_model": 0.9951638503501833,
+      "coulombic_efficiency_measured": 0.9795161726144603
+    },
+    "C/2 cycle 2": {
+      "role": "check",
+      "charge_mAh_model": 1.3985190321881844,
+      "charge_mAh_measured": 1.3665195957427771,
+      "discharge_mAh_model": 1.3848638351967457,
+      "discharge_mAh_measured": 1.3576787713265455,
+      "excess_mAh_model": 0.01365519699143869,
+      "excess_mAh_measured": 0.008840824416231685,
+      "coulombic_efficiency_model": 0.9902359591273684,
+      "coulombic_efficiency_measured": 0.9935304078743004
+    }
+  },
+  "v2_1_start": {
+    "Ds": 2.5072766016365536e-14,
+    "k": 1.1311206975595522e-11,
+    "R_contact": 89.04699722754464,
+    "C_dl": 3.1495434648062033
+  }
+}
