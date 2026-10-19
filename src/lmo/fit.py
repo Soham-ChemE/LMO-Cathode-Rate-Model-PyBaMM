@@ -14,6 +14,7 @@ conservative view, from refits that leave one of the four training steps out.
 
 from __future__ import annotations
 
+import gc
 import json
 import time
 
@@ -40,6 +41,18 @@ TRAINING = [("C/5", 1), ("C/2", 1)]
 PARAM_NAMES = ["Ds", "k", "R_contact"]
 BOUNDS_LOG10 = {"Ds": (-17.0, -11.0), "k": (-14.0, -8.0), "R_contact": (-1.0, 3.0)}
 N_POINTS_PER_STEP = 300
+
+
+def _release_memory():
+    """Give freed solver memory back to the OS. A long fit makes hundreds of solves, and the
+    allocator otherwise keeps the freed heap (several GB for the DFN) as fragmented arenas."""
+    gc.collect()
+    try:
+        import ctypes
+
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (OSError, AttributeError):
+        pass
 
 
 class RateSimulator:
@@ -95,6 +108,8 @@ class RateSimulator:
         sol = self.sim.solve(inputs={n: float(fit[n]) for n in self.input_names})
         self.sim._solution = None  # the solution is tabulated below; keeping it leaks memory over a fit
         frames = solution_frames(sol, self.n_cycles, self.rate, include_rests=include_rests)
+        del sol
+        _release_memory()
         return {f["step"].iloc[0]: f for f in frames if f["cycle"].iloc[0] == self.cycle}
 
     def residual_points(self, n: int = N_POINTS_PER_STEP) -> dict[str, tuple[np.ndarray, np.ndarray]]:
