@@ -1,0 +1,24 @@
+{
+  "model": "DFN",
+  "headline_variant": "dl",
+  "chosen_on": "training curves and rests only (never 2C)",
+  "variants": {
+    "dl": {
+      "model_options": {
+        "surface form": "differential"
+      },
+      "parameters": {
+        "Ds": 2.5072766016365536e-14,
+        "k": 1.1311206975595522e-11,
+        "R_contact": 89.04699722754464,
+        "C_dl": 3.1495434648062033
+      },
+      "tau_R2_over_Ds_s": 997.0978065875127,
+      "training_rmse_curves_mV": 25.974957506743642,
+      "training_rmse_rests_mV": 14.865157304837478,
+      "k_R_contact_correlation": 0.8819317515070082,
+      "converged": true,
+      "fit_time_s": 96.41961121559143
+    }
+  }
+}

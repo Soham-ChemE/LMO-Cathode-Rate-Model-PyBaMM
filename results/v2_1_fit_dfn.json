@@ -1,0 +1,263 @@
+{
+  "version": "v2.1",
+  "variant": "dl",
+  "model_options": {
+    "surface form": "differential"
+  },
+  "model": "DFN",
+  "disc_mm": 10.0,
+  "training_curves": [
+    "C/5 cycle 1 charge+discharge",
+    "C/2 cycle 1 charge+discharge"
+  ],
+  "training_rests": [
+    "C/10 cycle 1 rest after charge",
+    "C/10 cycle 1 rest after discharge",
+    "C/5 cycle 1 rest after charge",
+    "C/5 cycle 1 rest after discharge",
+    "C/2 cycle 1 rest after charge",
+    "C/2 cycle 1 rest after discharge"
+  ],
+  "two_c_used": false,
+  "particle_radius_m": 5e-06,
+  "weighting": {
+    "lambda": 1.0,
+    "rest_weight": 3.4469099377285564,
+    "rest_points": "every logged sample of each rest",
+    "n_curve_points": 1200,
+    "n_rest_points": 101
+  },
+  "training_rmse_curves_V": 0.025974957506743643,
+  "training_rmse_rests_V": 0.014865157304837479,
+  "training_rmse_rest_traces_V": 0.014865157304837479,
+  "training_rmse_per_block_mV": {
+    "C/5 charge": 32.08587818606976,
+    "C/5 discharge": 10.326773514248542,
+    "C/2 charge": 21.722408519319025,
+    "C/2 discharge": 33.02703147184856,
+    "C/10 rest after charge": 27.783074397534854,
+    "C/10 rest after discharge": 4.515423243172653,
+    "C/5 rest after charge": 24.135029330544146,
+    "C/5 rest after discharge": 7.687160559523834,
+    "C/2 rest after charge": 13.037614121252787,
+    "C/2 rest after discharge": 10.674326632192322
+  },
+  "weighted_rmse_V": 0.028742617045011548,
+  "n_residuals": 1301,
+  "fit_time_s": 96.41961121559143,
+  "converged": true,
+  "starts_tried": [
+    {
+      "start": {
+        "Ds": 2.499704475746834e-14,
+        "k": 1.1283579645016166e-11,
+        "R_contact": 88.94024372498023,
+        "C_dl": 3.148648826008564
+      },
+      "cost": 1.074805583009641,
+      "optimum": {
+        "Ds": 2.5072766016365536e-14,
+        "k": 1.1311206975595522e-11,
+        "R_contact": 89.04699722754464,
+        "C_dl": 3.1495434648062033
+      }
+    }
+  ],
+  "parameters": {
+    "Ds": {
+      "value": 2.5072766016365536e-14,
+      "log10": -13.600797752225253,
+      "sd_log10_jacobian": 0.02052800032768799,
+      "ci95_low_jacobian": 2.2854270700379044e-14,
+      "ci95_high_jacobian": 2.7506613707038496e-14,
+      "leave_one_step_out_min": 2.0762571471610927e-14,
+      "leave_one_step_out_max": 3.1061160519188276e-14,
+      "unit": "m2/s"
+    },
+    "k": {
+      "value": 1.1311206975595522e-11,
+      "log10": -10.94649105070026,
+      "sd_log10_jacobian": 0.0389411323323754,
+      "ci95_low_jacobian": 9.488210910573122e-12,
+      "ci95_high_jacobian": 1.3484460289788455e-11,
+      "leave_one_step_out_min": 8.005410601595213e-12,
+      "leave_one_step_out_max": 3.013482818824369e-11,
+      "unit": "m^2.5/(mol^0.5 s) in j0 = k F sqrt(c_e c_s (c_max - c_s))"
+    },
+    "R_contact": {
+      "value": 89.04699722754464,
+      "log10": 1.9496192791109386,
+      "sd_log10_jacobian": 0.014294657019511069,
+      "ci95_low_jacobian": 83.48371203132686,
+      "ci95_high_jacobian": 94.98101512624265,
+      "leave_one_step_out_min": 74.09217252314593,
+      "leave_one_step_out_max": 103.5974714920912,
+      "unit": "Ohm"
+    },
+    "C_dl": {
+      "value": 3.1495434648062033,
+      "log10": 0.4982476061436591,
+      "sd_log10_jacobian": 0.01699644137051458,
+      "ci95_low_jacobian": 2.9169875872426063,
+      "ci95_high_jacobian": 3.40063978334593,
+      "leave_one_step_out_min": 2.762977438262721,
+      "leave_one_step_out_max": 3.510900766372737,
+      "unit": "F/m2 of particle surface (effective; absorbs the unknown real surface area)"
+    },
+    "tau_R2_over_Ds_s": {
+      "value": 997.0978065875127,
+      "ci95_low_jacobian": 908.8723267162071,
+      "ci95_high_jacobian": 1093.8874544609898,
+      "leave_one_step_out_min": 804.8636812702493,
+      "leave_one_step_out_max": 1204.0897744377664
+    }
+  },
+  "log10_correlation": {
+    "Ds-k": -0.46651343240723764,
+    "Ds-R_contact": -0.2606149826632006,
+    "Ds-C_dl": -0.5443082782584489,
+    "k-R_contact": 0.8819317515070082,
+    "k-C_dl": 0.6545309268156975,
+    "R_contact-C_dl": 0.6362896860220124
+  },
+  "rest_jumps": {
+    "C/10 rest after charge": {
+      "current_mA": 0.1466875751679145,
+      "first_sample_delay_s": 0.04840000015246915,
+      "jump_measured_mV": 10.367800000000038,
+      "jump_model_mV": 15.14832781759079,
+      "instantaneous_resistance_measured_ohm": 70.67946953333934,
+      "instantaneous_resistance_model_ohm": 103.26933143621996,
+      "relaxation_30s_measured_mV": 72.55410000000052,
+      "relaxation_30s_model_mV": 33.86874181258115,
+      "end_of_rest_error_mV": 38.68535818741936
+    },
+    "C/10 rest after discharge": {
+      "current_mA": 0.1402053092400055,
+      "first_sample_delay_s": 0.048399987164884806,
+      "jump_measured_mV": 13.786100000000356,
+      "jump_model_mV": 14.312820736736231,
+      "instantaneous_resistance_measured_ohm": 98.32794545890634,
+      "instantaneous_resistance_model_ohm": 102.08472713565601,
+      "relaxation_30s_measured_mV": 173.08240000000018,
+      "relaxation_30s_model_mV": 170.41404305222497,
+      "end_of_rest_error_mV": -2.66835694777523
+    },
+    "C/5 rest after charge": {
+      "current_mA": 0.2871264976975961,
+      "first_sample_delay_s": 0.0483999993884936,
+      "jump_measured_mV": 19.31620000000045,
+      "jump_model_mV": 29.658808027680728,
+      "instantaneous_resistance_measured_ohm": 67.27418108357392,
+      "instantaneous_resistance_model_ohm": 103.2952662520114,
+      "relaxation_30s_measured_mV": 104.74780000000017,
+      "relaxation_30s_model_mV": 69.30855968991523,
+      "end_of_rest_error_mV": 35.43924031008494
+    },
+    "C/5 rest after discharge": {
+      "current_mA": 0.2863935096132857,
+      "first_sample_delay_s": 0.04840000014519319,
+      "jump_measured_mV": 26.39979999999964,
+      "jump_model_mV": 29.435248386317614,
+      "instantaneous_resistance_measured_ohm": 92.1801616092733,
+      "instantaneous_resistance_model_ohm": 102.77903443434782,
+      "relaxation_30s_measured_mV": 226.6608999999997,
+      "relaxation_30s_model_mV": 206.80733590345392,
+      "end_of_rest_error_mV": -19.853564096545817
+    },
+    "C/2 rest after charge": {
+      "current_mA": 0.717257040977103,
+      "first_sample_delay_s": 0.04839999941759743,
+      "jump_measured_mV": 50.232799999999855,
+      "jump_model_mV": 73.97680403451633,
+      "instantaneous_resistance_measured_ohm": 70.03458611095523,
+      "instantaneous_resistance_model_ohm": 103.13848426463603,
+      "relaxation_30s_measured_mV": 171.3786000000006,
+      "relaxation_30s_model_mV": 180.4517482796628,
+      "end_of_rest_error_mV": -9.073148279662213
+    },
+    "C/2 rest after discharge": {
+      "current_mA": 0.7165621104061113,
+      "first_sample_delay_s": 0.04839999941032147,
+      "jump_measured_mV": 72.55840000000013,
+      "jump_model_mV": 74.05628138401354,
+      "instantaneous_resistance_measured_ohm": 101.259052001616,
+      "instantaneous_resistance_model_ohm": 103.34942401858532,
+      "relaxation_30s_measured_mV": 285.36440000000016,
+      "relaxation_30s_model_mV": 302.23040037600146,
+      "end_of_rest_error_mV": 16.866000376001278
+    }
+  },
+  "leave_one_step_out": [
+    {
+      "Ds": 2.449069055080007e-14,
+      "k": 1.0037489879586968e-11,
+      "R_contact": 86.22627607359554,
+      "C_dl": 3.091407229668031,
+      "dropped": "C/5 charge"
+    },
+    {
+      "Ds": 2.0762571471610927e-14,
+      "k": 1.2212330594536285e-11,
+      "R_contact": 89.0959169650534,
+      "C_dl": 3.336832659536825,
+      "dropped": "C/5 discharge"
+    },
+    {
+      "Ds": 3.1061160519188276e-14,
+      "k": 8.005410601595213e-12,
+      "R_contact": 84.02561158511281,
+      "C_dl": 2.823954275487184,
+      "dropped": "C/2 charge"
+    },
+    {
+      "Ds": 2.248456707900982e-14,
+      "k": 3.013482818824369e-11,
+      "R_contact": 103.5974714920912,
+      "C_dl": 3.510900766372737,
+      "dropped": "C/2 discharge"
+    },
+    {
+      "Ds": 2.6423102151096133e-14,
+      "k": 1.1104716782907304e-11,
+      "R_contact": 88.03339395538642,
+      "C_dl": 3.072834412358027,
+      "dropped": "C/10 rest after charge"
+    },
+    {
+      "Ds": 2.6087829546001845e-14,
+      "k": 9.570553580919026e-12,
+      "R_contact": 82.88756681669042,
+      "C_dl": 2.762977438262721,
+      "dropped": "C/10 rest after discharge"
+    },
+    {
+      "Ds": 2.7986663581101866e-14,
+      "k": 1.1012877894498635e-11,
+      "R_contact": 87.28699204427096,
+      "C_dl": 3.006991107546008,
+      "dropped": "C/5 rest after charge"
+    },
+    {
+      "Ds": 2.6985487001987098e-14,
+      "k": 1.1150496573243102e-11,
+      "R_contact": 89.53233864839062,
+      "C_dl": 3.136358952784836,
+      "dropped": "C/5 rest after discharge"
+    },
+    {
+      "Ds": 2.2503948961054582e-14,
+      "k": 1.5017121825620665e-11,
+      "R_contact": 99.16586047477642,
+      "C_dl": 3.449092019754576,
+      "dropped": "C/2 rest after charge"
+    },
+    {
+      "Ds": 2.2804644633809305e-14,
+      "k": 8.063422115347154e-12,
+      "R_contact": 74.09217252314593,
+      "C_dl": 3.1214941813642274,
+      "dropped": "C/2 rest after discharge"
+    }
+  ]
+}
