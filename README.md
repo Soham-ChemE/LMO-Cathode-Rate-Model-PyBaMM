@@ -89,6 +89,9 @@ single biggest limitation of this work, and it is visible in the k / R_contact c
 | SPMe | 12 | 11.5 | 0.32 | 0.64 | 99 | 1.14e-14 | 0.989 (+20.2 %) |
 | SPMe | 14 | 8.5 | 0.23 | 0.73 | 101 | 1.14e-14 | 0.989 (+20.2 %) |
 | SPMe | 16 | 6.5 | 0.18 | 0.80 | 102 | 1.14e-14 | 0.989 (+20.2 %) |
+| DFN | 12 | 11.5 | 0.32 | 0.64 | 99 | 1.14e-14 | 0.989 (+20.2 %) |
+| DFN | 14 | 8.5 | 0.23 | 0.73 | 101 | 1.14e-14 | 0.989 (+20.2 %) |
+| DFN | 16 | 6.5 | 0.18 | 0.80 | 102 | 1.14e-14 | 0.989 (+20.2 %) |
 
 The disc diameter is not known. For each diameter the active volume fraction and porosity were re-derived from
 the capacity (active mass from the EC-Lab capacity and the 110 mAh/g rating, LMO density 4.28 g/cm³, binder and

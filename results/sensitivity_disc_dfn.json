@@ -1,0 +1,69 @@
+{
+  "model": "DFN",
+  "discs": {
+    "12.0": {
+      "geometry": {
+        "disc_mm": 12.0,
+        "area_m2": 0.00011309733552923255,
+        "areal_loading_mg_cm2": 11.526676181503934,
+        "active_volume_fraction": 0.31684101653391794,
+        "inactive_volume_fraction": 0.04638630216111103,
+        "porosity": 0.636772681304971,
+        "coating_density_g_cm3": 1.4395748946551687
+      },
+      "parameters": {
+        "Ds": 1.1403333291823922e-14,
+        "k": 2.4093343294361228e-11,
+        "R_contact": 99.452810379748
+      },
+      "training_rmse_V": 0.026210654491760334,
+      "predicted_2c_capacity_mAh": 0.9887995503931325,
+      "predicted_2c_error_pct": 20.157323741280603,
+      "predicted_2c_vq_rmse_mV": 66.29022468813277,
+      "fit_time_s": 134.3311104774475
+    },
+    "14.0": {
+      "geometry": {
+        "disc_mm": 14.0,
+        "area_m2": 0.0001539380400258999,
+        "areal_loading_mg_cm2": 8.468578419064114,
+        "active_volume_fraction": 0.23278115500451108,
+        "inactive_volume_fraction": 0.034079732199999935,
+        "porosity": 0.7331391127954889,
+        "coating_density_g_cm3": 1.0576468613793073
+      },
+      "parameters": {
+        "Ds": 1.1403199600516597e-14,
+        "k": 2.4080676272207848e-11,
+        "R_contact": 100.9347280883783
+      },
+      "training_rmse_V": 0.026213811425933733,
+      "predicted_2c_capacity_mAh": 0.9890377513029763,
+      "predicted_2c_error_pct": 20.186269530979025,
+      "predicted_2c_vq_rmse_mV": 66.39602239961158,
+      "fit_time_s": 140.8438732624054
+    },
+    "16.0": {
+      "geometry": {
+        "disc_mm": 16.0,
+        "area_m2": 0.00020106192982974675,
+        "areal_loading_mg_cm2": 6.483755352095964,
+        "active_volume_fraction": 0.17822307180032884,
+        "inactive_volume_fraction": 0.026092294965624957,
+        "porosity": 0.7956846332340463,
+        "coating_density_g_cm3": 0.8097608782435325
+      },
+      "parameters": {
+        "Ds": 1.1405981581391511e-14,
+        "k": 2.404007232363653e-11,
+        "R_contact": 101.83446174607771
+      },
+      "training_rmse_V": 0.026215323247473315,
+      "predicted_2c_capacity_mAh": 0.9889384065515905,
+      "predicted_2c_error_pct": 20.17419731730385,
+      "predicted_2c_vq_rmse_mV": 66.4465924626677,
+      "fit_time_s": 155.45341515541077
+    }
+  },
+  "spread_of_2c_error_pct": 0.02894578969842243
+}
