@@ -46,6 +46,15 @@ VARIANTS = {
 }
 EXTRA_BOUNDS_LOG10 = {"C_dl": (-2.0, 3.0), "sd_p": (-1.5, 0.3)}  # C_dl in F/m2 of particle surface; sd_p relative to the mean radius
 EXTRA_DEFAULT = {"C_dl": 1.0, "sd_p": 0.5}
+# The v2.1 cost surface has several local minima (the double layer trades against R_contact and
+# k), so the SPMe fit is run from these starting points and the lowest cost is kept; the DFN
+# starts from the SPMe optimum (v1 and v2 showed the two fidelities land within a few percent).
+STARTS = [
+    {"Ds": 1e-14, "k": 1e-11, "R_contact": 20.0, "C_dl": 1.0, "sd_p": 0.5},
+    {"Ds": 1e-14, "k": 1e-11, "R_contact": 70.0, "C_dl": 5.0, "sd_p": 0.3},
+    {"Ds": 1e-13, "k": 1e-9, "R_contact": 60.0, "C_dl": 0.2, "sd_p": 0.8},
+    {"Ds": 3e-15, "k": 3e-11, "R_contact": 40.0, "C_dl": 20.0, "sd_p": 0.5},
+]
 R_MIN_REL, R_MAX_REL = 0.02, 4.0  # particle-size axis, relative to the mean radius
 N_SIZES = 20
 PREFIX = "v2_1_"
@@ -99,16 +108,24 @@ def residual(variant: str, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM,
     return V2Residual(kind, disc_mm, lam, mode, sim_kwargs=sim_kwargs(variant), param_names=names)
 
 
-def fit_variant(variant: str, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, x0: dict | None = None, blocks=None, verbose=True, lam=HEADLINE_LAMBDA):
+def fit_variant(variant: str, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, x0: dict | None = None, blocks=None, verbose=True, lam=HEADLINE_LAMBDA, starts=None):
+    """Least squares from ``x0`` or, with ``starts`` (a list of dicts), from each start keeping the
+    lowest cost. The result carries ``starts_tried`` (cost per start) for the record."""
     res = residual(variant, kind, disc_mm, lam)
-    x0 = {**DEFAULT_FIT, **EXTRA_DEFAULT, **(x0 or {})}
     bounds = {**BOUNDS_LOG10, **EXTRA_BOUNDS_LOG10}
-    theta0 = np.array([np.log10(x0[n]) for n in res.param_names])
     lb = np.array([bounds[n][0] for n in res.param_names])
     ub = np.array([bounds[n][1] for n in res.param_names])
     t0 = time.time()
-    result = least_squares(lambda th: res.weighted(th, blocks), theta0, bounds=(lb, ub), diff_step=1e-3, xtol=1e-5, ftol=1e-6, verbose=2 if verbose else 0)
-    return result, res, time.time() - t0
+    best, tried = None, []
+    for start in starts or [x0]:
+        x = {**DEFAULT_FIT, **EXTRA_DEFAULT, **(start or {})}
+        theta0 = np.array([np.log10(x[n]) for n in res.param_names])
+        r = least_squares(lambda th: res.weighted(th, blocks), theta0, bounds=(lb, ub), diff_step=1e-3, xtol=1e-5, ftol=1e-6, verbose=2 if verbose else 0)
+        tried.append({"start": {n: x[n] for n in res.param_names}, "cost": float(np.sum(r.fun**2)), "optimum": {n: float(v) for n, v in res.unpack(r.x).items()}})
+        if best is None or tried[-1]["cost"] < best_cost:
+            best, best_cost = r, tried[-1]["cost"]
+    best.starts_tried = tried
+    return best, res, time.time() - t0
 
 
 def _loo_refit(args):
@@ -143,6 +160,7 @@ def summarise(result, res: V2Residual, variant: str, elapsed: float, loo=None) -
         "n_residuals": int(len(result.fun)),
         "fit_time_s": elapsed,
         "converged": bool(result.success),
+        "starts_tried": getattr(result, "starts_tried", None),
         "parameters": {},
         "log10_correlation": {f"{a}-{b}": float(rep["corr"][i, j]) for i, a in enumerate(names) for j, b in enumerate(names) if i < j},
     }
@@ -178,8 +196,8 @@ def summarise(result, res: V2Residual, variant: str, elapsed: float, loo=None) -
     return out
 
 
-def fit_with_loo(variant: str, kind: str, disc_mm: float = DEFAULT_DISC_MM, x0: dict | None = None):
-    result, res, elapsed = fit_variant(variant, kind, disc_mm, x0=x0)
+def fit_with_loo(variant: str, kind: str, disc_mm: float = DEFAULT_DISC_MM, x0: dict | None = None, starts=None):
+    result, res, elapsed = fit_variant(variant, kind, disc_mm, x0=x0, starts=starts)
     best = res.unpack(result.x)
     jobs = [(variant, kind, disc_mm, best, [b for b in res.blocks if b != drop], block_label(drop)) for drop in res.blocks]
     workers = int(os.environ.get("LMO_WORKERS", "1"))
@@ -193,6 +211,21 @@ def fit_with_loo(variant: str, kind: str, disc_mm: float = DEFAULT_DISC_MM, x0: 
     return result, res, summary
 
 
+def _starts_for(variant: str, kind: str, x0: dict | None):
+    """SPMe: the multi-start list. DFN: the SPMe optimum of the same variant when available."""
+    if x0:
+        return [x0]
+    if kind != "SPMe":
+        tag = variant.replace("+", "_")
+        for name in (f"{PREFIX}variants_spme.json",):
+            p = RESULTS_DIR / name
+            if p.exists():
+                table = json.load(open(p))["variants"]
+                if variant in table:
+                    return [table[variant]["parameters"]]
+    return STARTS
+
+
 def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, variants=tuple(VARIANTS), headline: str = HEADLINE_VARIANT, x0: dict | None = None) -> dict:
     """Fit every variant (training data only) for the variant table, then the headline variant
     with leave-one-block-out refits; writes v2_1_variants_<model>.json and v2_1_fit_<model>.json."""
@@ -201,14 +234,15 @@ def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, variants=tuple(VAR
     table = {"model": kind, "headline_variant": headline, "chosen_on": "training curves and rests only (never 2C)", "variants": {}}
     headline_summary = None
     for variant in variants:
+        starts = _starts_for(variant, kind, x0)
         if variant == headline:
-            result, res, summary = fit_with_loo(variant, kind, disc_mm, x0=x0)
+            result, res, summary = fit_with_loo(variant, kind, disc_mm, starts=starts)
             headline_summary = summary
             with open(RESULTS_DIR / f"{PREFIX}fit_{kind.lower()}.json", "w") as f:
                 json.dump(summary, f, indent=2)
             res.rest_frames(res.unpack(result.x)).to_csv(PROCESSED_DIR / f"{PREFIX}model_rests_{kind.lower()}.csv", index=False)
         else:
-            result, res, elapsed = fit_variant(variant, kind, disc_mm, x0=x0, verbose=False)
+            result, res, elapsed = fit_variant(variant, kind, disc_mm, starts=starts, verbose=False)
             summary = summarise(result, res, variant, elapsed)
         table["variants"][variant] = {
             "model_options": VARIANTS[variant]["options"],
