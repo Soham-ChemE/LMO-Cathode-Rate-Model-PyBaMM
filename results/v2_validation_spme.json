@@ -1,0 +1,168 @@
+{
+  "model": "SPMe",
+  "disc_mm": 10.0,
+  "parameters": {
+    "Ds": 1.2104074050816554e-13,
+    "k": 9.990033291339789e-09,
+    "R_contact": 135.45759820045984
+  },
+  "rates": {
+    "C/10": {
+      "cycle": 1,
+      "role": "low-rate check",
+      "charge": {
+        "capacity_mAh_model": 1.4167949573557757,
+        "capacity_mAh_measured": 1.566811429566496,
+        "capacity_error_pct": -9.574634788835237,
+        "mean_voltage_V_model": 4.0879802939752885,
+        "mean_voltage_V_measured": 4.086265783074626,
+        "mean_voltage_error_mV": 1.71451090066288,
+        "energy_mWh_model": 5.791829866273971,
+        "energy_mWh_measured": 6.402407933167812,
+        "energy_error_pct": -9.536694213605605,
+        "vq_rmse_mV": 89.55037711083428,
+        "vq_rmse_common_range_mV": 41.135923646448916,
+        "vt_rmse_mV": 89.55704365145546,
+        "v_start_model": 3.805954774992864,
+        "v_start_measured": 3.3470254
+      },
+      "discharge": {
+        "capacity_mAh_model": 1.4253582372341846,
+        "capacity_mAh_measured": 1.4295421074160297,
+        "capacity_error_pct": -0.29267204933246993,
+        "mean_voltage_V_model": 4.044056911256003,
+        "mean_voltage_V_measured": 4.035909934272724,
+        "mean_voltage_error_mV": 8.146976983279153,
+        "energy_mWh_model": 5.764229830302578,
+        "energy_mWh_measured": 5.76950319278152,
+        "energy_error_pct": -0.09140063368956222,
+        "vq_rmse_mV": 14.7082693309314,
+        "vq_rmse_common_range_mV": 14.035178700713642,
+        "vt_rmse_mV": 14.716394854054487,
+        "v_start_model": 4.454752724749223,
+        "v_start_measured": 4.4199395
+      }
+    },
+    "C/5": {
+      "cycle": 1,
+      "role": "training",
+      "charge": {
+        "capacity_mAh_model": 1.41149011992487,
+        "capacity_mAh_measured": 1.4554614358411027,
+        "capacity_error_pct": -3.021125454335514,
+        "mean_voltage_V_model": 4.10789202147025,
+        "mean_voltage_V_measured": 4.108562293446804,
+        "mean_voltage_error_mV": -0.6702719765536713,
+        "energy_mWh_model": 5.79824900202346,
+        "energy_mWh_measured": 5.979853974862698,
+        "energy_error_pct": -3.036946614459902,
+        "vq_rmse_mV": 29.834235525880157,
+        "vq_rmse_common_range_mV": 17.710550530443346,
+        "vt_rmse_mV": 29.836232883395414,
+        "v_start_model": 3.848129254237117,
+        "v_start_measured": 3.8072262
+      },
+      "discharge": {
+        "capacity_mAh_model": 1.4215817065872731,
+        "capacity_mAh_measured": 1.4220342778067654,
+        "capacity_error_pct": -0.03182561957580101,
+        "mean_voltage_V_model": 4.02203818434239,
+        "mean_voltage_V_measured": 4.015796640681344,
+        "mean_voltage_error_mV": 6.241543661045235,
+        "energy_mWh_model": 5.717655906056631,
+        "energy_mWh_measured": 5.71060047575013,
+        "energy_error_pct": 0.12354970964019552,
+        "vq_rmse_mV": 14.967081127332845,
+        "vq_rmse_common_range_mV": 14.973248269827277,
+        "vt_rmse_mV": 14.967443660175343,
+        "v_start_model": 4.409788985197566,
+        "v_start_measured": 4.3825502
+      }
+    },
+    "C/2": {
+      "cycle": 1,
+      "role": "training",
+      "charge": {
+        "capacity_mAh_model": 1.391923454402532,
+        "capacity_mAh_measured": 1.3899376992046266,
+        "capacity_error_pct": 0.14286648955861617,
+        "mean_voltage_V_model": 4.1701716518746395,
+        "mean_voltage_V_measured": 4.162516750378383,
+        "mean_voltage_error_mV": 7.654901496256805,
+        "energy_mWh_model": 5.804559731128862,
+        "energy_mWh_measured": 5.785638954921648,
+        "energy_error_pct": 0.3270300195818199,
+        "vq_rmse_mV": 22.187414807594514,
+        "vq_rmse_common_range_mV": 22.187414807594514,
+        "vt_rmse_mV": 22.187210100323295,
+        "v_start_model": 3.986374307874701,
+        "v_start_measured": 3.8842554
+      },
+      "discharge": {
+        "capacity_mAh_model": 1.4120812640802658,
+        "capacity_mAh_measured": 1.361466455297465,
+        "capacity_error_pct": 3.7176684438943544,
+        "mean_voltage_V_model": 3.9581634022389514,
+        "mean_voltage_V_measured": 3.959631735132499,
+        "mean_voltage_error_mV": -1.4683328935478634,
+        "energy_mWh_model": 5.589248380469824,
+        "energy_mWh_measured": 5.390905782714194,
+        "energy_error_pct": 3.679207275178334,
+        "vq_rmse_mV": 40.08649365056121,
+        "vq_rmse_common_range_mV": 40.08649365056121,
+        "vt_rmse_mV": 40.08660935602786,
+        "v_start_model": 4.266851460241714,
+        "v_start_measured": 4.2962418
+      }
+    },
+    "2C": {
+      "cycle": 2,
+      "role": "blind prediction",
+      "charge": {
+        "capacity_mAh_model": 0.6884559280935598,
+        "capacity_mAh_measured": 0.8482509638326636,
+        "capacity_error_pct": -18.838179094674974,
+        "mean_voltage_V_model": 4.417275576200175,
+        "mean_voltage_V_measured": 4.3740715059438235,
+        "mean_voltage_error_mV": 43.2040702563512,
+        "energy_mWh_model": 3.0410995564579055,
+        "energy_mWh_measured": 3.710310370789839,
+        "energy_error_pct": -18.036518443320258,
+        "vq_rmse_mV": 81.79146047994271,
+        "vq_rmse_common_range_mV": 89.40211067315344,
+        "vt_rmse_mV": 81.79047576907735,
+        "v_start_model": 4.326584310973258,
+        "v_start_measured": 4.0325274
+      },
+      "discharge": {
+        "capacity_mAh_model": 0.6884557638317061,
+        "capacity_mAh_measured": 0.8229207505671382,
+        "capacity_error_pct": -16.339967930418798,
+        "mean_voltage_V_model": 3.587830923020559,
+        "mean_voltage_V_measured": 3.695976877825859,
+        "mean_voltage_error_mV": -108.1459548053001,
+        "energy_mWh_model": 2.470062878607134,
+        "energy_mWh_measured": 3.041496066379244,
+        "energy_error_pct": -18.787898300732433,
+        "vq_rmse_mV": 149.53381118845556,
+        "vq_rmse_common_range_mV": 161.93136969350243,
+        "vt_rmse_mV": 149.53391837984452,
+        "v_start_model": 3.67594744739277,
+        "v_start_measured": 4.0613427
+      }
+    }
+  },
+  "version": "v2",
+  "headline": {
+    "statement": "2C cycle-2 discharge capacity, never used in fitting",
+    "predicted_mAh": 0.6884557638317061,
+    "measured_mAh": 0.8229207505671382,
+    "error_pct": -16.339967930418798,
+    "abs_error_pct": 16.339967930418798,
+    "mean_voltage_error_mV": -108.1459548053001,
+    "energy_error_pct": -18.787898300732433,
+    "vq_rmse_mV": 149.53381118845556,
+    "measured_capacity_loss_vs_c10_pct": 42.43466167956329,
+    "predicted_capacity_loss_vs_c10_pct": 51.69945731203617
+  }
+}

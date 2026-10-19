@@ -1,0 +1,431 @@
+{
+  "model": "SPMe",
+  "headline": "lambda=1",
+  "weightings": {
+    "unweighted": {
+      "lambda": null,
+      "rest_points": "trace",
+      "rest_weight": 1.0,
+      "n_rest_points": 101,
+      "parameters": {
+        "Ds": 5.356643209105327e-14,
+        "k": 6.39753659774073e-11,
+        "R_contact": 124.60893466366764
+      },
+      "tau_R2_over_Ds_s": 466.7101956222232,
+      "training_rmse_curves_mV": 27.730887407646442,
+      "training_rmse_fitted_rest_points_mV": 45.75306858808784,
+      "training_rmse_rest_traces_mV": 45.75306858808784,
+      "k_R_contact_correlation": 0.8826610333401503,
+      "rest_jumps": {
+        "C/10 rest after charge": {
+          "current_mA": 0.1466875751679145,
+          "first_sample_delay_s": 0.04840000015246915,
+          "jump_measured_mV": 10.367800000000038,
+          "jump_model_mV": 20.84019736841025,
+          "instantaneous_resistance_measured_ohm": 70.67946953333934,
+          "instantaneous_resistance_model_ohm": 142.07200128950458,
+          "relaxation_30s_measured_mV": 72.55410000000052,
+          "relaxation_30s_model_mV": 28.89357876902121,
+          "end_of_rest_error_mV": 43.6605212309793
+        },
+        "C/10 rest after discharge": {
+          "current_mA": 0.1402053092400055,
+          "first_sample_delay_s": 0.048399987164884806,
+          "jump_measured_mV": 13.786100000000356,
+          "jump_model_mV": 58.50785784627188,
+          "instantaneous_resistance_measured_ohm": 98.32794545890634,
+          "instantaneous_resistance_model_ohm": 417.30130023904644,
+          "relaxation_30s_measured_mV": 173.08240000000018,
+          "relaxation_30s_model_mV": 169.55056874296037,
+          "end_of_rest_error_mV": -3.531831257039819
+        },
+        "C/2 rest after charge": {
+          "current_mA": 0.717257040977103,
+          "first_sample_delay_s": 0.04839999941759743,
+          "jump_measured_mV": 50.232799999999855,
+          "jump_model_mV": 103.22535738110884,
+          "instantaneous_resistance_measured_ohm": 70.03458611095523,
+          "instantaneous_resistance_model_ohm": 143.91682686096362,
+          "relaxation_30s_measured_mV": 171.3786000000006,
+          "relaxation_30s_model_mV": 154.31067464751536,
+          "end_of_rest_error_mV": 17.067925352485247
+        },
+        "C/2 rest after discharge": {
+          "current_mA": 0.7165621104061113,
+          "first_sample_delay_s": 0.04839999941032147,
+          "jump_measured_mV": 72.55840000000013,
+          "jump_model_mV": 165.8694887238843,
+          "instantaneous_resistance_measured_ohm": 101.259052001616,
+          "instantaneous_resistance_model_ohm": 231.47956934239494,
+          "relaxation_30s_measured_mV": 285.36440000000016,
+          "relaxation_30s_model_mV": 247.33699821948863,
+          "end_of_rest_error_mV": -38.02740178051156
+        },
+        "C/5 rest after charge": {
+          "current_mA": 0.2871264976975961,
+          "first_sample_delay_s": 0.0483999993884936,
+          "jump_measured_mV": 19.31620000000045,
+          "jump_model_mV": 40.77899180486977,
+          "instantaneous_resistance_measured_ohm": 67.27418108357392,
+          "instantaneous_resistance_model_ohm": 142.0244809582797,
+          "relaxation_30s_measured_mV": 104.74780000000017,
+          "relaxation_30s_model_mV": 56.522959945502826,
+          "end_of_rest_error_mV": 48.22484005449734
+        },
+        "C/5 rest after discharge": {
+          "current_mA": 0.2863935096132857,
+          "first_sample_delay_s": 0.04840000014519319,
+          "jump_measured_mV": 26.39979999999964,
+          "jump_model_mV": 101.0832840757665,
+          "instantaneous_resistance_measured_ohm": 92.1801616092733,
+          "instantaneous_resistance_model_ohm": 352.95242623430346,
+          "relaxation_30s_measured_mV": 226.6608999999997,
+          "relaxation_30s_model_mV": 192.24383731042673,
+          "end_of_rest_error_mV": -34.41706268957301
+        }
+      },
+      "fit_time_s": 21.112049341201782
+    },
+    "lambda=0.25": {
+      "lambda": 0.25,
+      "rest_points": "trace",
+      "rest_weight": 1.7234549688642782,
+      "n_rest_points": 101,
+      "parameters": {
+        "Ds": 1.072382289609034e-13,
+        "k": 9.999938825405698e-09,
+        "R_contact": 135.21491331229888
+      },
+      "tau_R2_over_Ds_s": 233.12581942316888,
+      "training_rmse_curves_mV": 28.692584986733518,
+      "training_rmse_fitted_rest_points_mV": 40.3170454094639,
+      "training_rmse_rest_traces_mV": 40.3170454094639,
+      "k_R_contact_correlation": 0.8032437506267612,
+      "rest_jumps": {
+        "C/10 rest after charge": {
+          "current_mA": 0.1466875751679145,
+          "first_sample_delay_s": 0.04840000015246915,
+          "jump_measured_mV": 10.367800000000038,
+          "jump_model_mV": 21.233843985506873,
+          "instantaneous_resistance_measured_ohm": 70.67946953333934,
+          "instantaneous_resistance_model_ohm": 144.75557293247442,
+          "relaxation_30s_measured_mV": 72.55410000000052,
+          "relaxation_30s_model_mV": 25.747720992255196,
+          "end_of_rest_error_mV": 46.80637900774531
+        },
+        "C/10 rest after discharge": {
+          "current_mA": 0.1402053092400055,
+          "first_sample_delay_s": 0.048399987164884806,
+          "jump_measured_mV": 13.786100000000356,
+          "jump_model_mV": 41.34972892184763,
+          "instantaneous_resistance_measured_ohm": 98.32794545890634,
+          "instantaneous_resistance_model_ohm": 294.9227040401484,
+          "relaxation_30s_measured_mV": 173.08240000000018,
+          "relaxation_30s_model_mV": 147.59214110258335,
+          "end_of_rest_error_mV": -25.49025889741685
+        },
+        "C/2 rest after charge": {
+          "current_mA": 0.717257040977103,
+          "first_sample_delay_s": 0.04839999941759743,
+          "jump_measured_mV": 50.232799999999855,
+          "jump_model_mV": 104.55360720679607,
+          "instantaneous_resistance_measured_ohm": 70.03458611095523,
+          "instantaneous_resistance_model_ohm": 145.76867320028686,
+          "relaxation_30s_measured_mV": 171.3786000000006,
+          "relaxation_30s_model_mV": 134.327917531885,
+          "end_of_rest_error_mV": 37.0506824681156
+        },
+        "C/2 rest after discharge": {
+          "current_mA": 0.7165621104061113,
+          "first_sample_delay_s": 0.04839999941032147,
+          "jump_measured_mV": 72.55840000000013,
+          "jump_model_mV": 137.6623514991282,
+          "instantaneous_resistance_measured_ohm": 101.259052001616,
+          "instantaneous_resistance_model_ohm": 192.11503022551403,
+          "relaxation_30s_measured_mV": 285.36440000000016,
+          "relaxation_30s_model_mV": 208.38691760207251,
+          "end_of_rest_error_mV": -76.97748239792767
+        },
+        "C/5 rest after charge": {
+          "current_mA": 0.2871264976975961,
+          "first_sample_delay_s": 0.0483999993884936,
+          "jump_measured_mV": 19.31620000000045,
+          "jump_model_mV": 41.5570566561021,
+          "instantaneous_resistance_measured_ohm": 67.27418108357392,
+          "instantaneous_resistance_model_ohm": 144.73431393249646,
+          "relaxation_30s_measured_mV": 104.74780000000017,
+          "relaxation_30s_model_mV": 50.37766987270853,
+          "end_of_rest_error_mV": 54.37013012729164
+        },
+        "C/5 rest after discharge": {
+          "current_mA": 0.2863935096132857,
+          "first_sample_delay_s": 0.04840000014519319,
+          "jump_measured_mV": 26.39979999999964,
+          "jump_model_mV": 75.22300597794995,
+          "instantaneous_resistance_measured_ohm": 92.1801616092733,
+          "instantaneous_resistance_model_ohm": 262.6561128411144,
+          "relaxation_30s_measured_mV": 226.6608999999997,
+          "relaxation_30s_model_mV": 173.73482892575342,
+          "end_of_rest_error_mV": -52.926071074246295
+        }
+      },
+      "fit_time_s": 10.795799732208252
+    },
+    "lambda=1": {
+      "lambda": 1.0,
+      "rest_points": "trace",
+      "rest_weight": 3.4469099377285564,
+      "n_rest_points": 101,
+      "parameters": {
+        "Ds": 1.2104074050816554e-13,
+        "k": 9.990033291339789e-09,
+        "R_contact": 135.45759820045984
+      },
+      "tau_R2_over_Ds_s": 206.54202787460207,
+      "training_rmse_curves_mV": 28.766945083161744,
+      "training_rmse_fitted_rest_points_mV": 40.17599871563823,
+      "training_rmse_rest_traces_mV": 40.17599871563823,
+      "k_R_contact_correlation": 0.6334026376822569,
+      "rest_jumps": {
+        "C/10 rest after charge": {
+          "current_mA": 0.1466875751679145,
+          "first_sample_delay_s": 0.04840000015246915,
+          "jump_measured_mV": 10.367800000000038,
+          "jump_model_mV": 21.24759474570226,
+          "instantaneous_resistance_measured_ohm": 70.67946953333934,
+          "instantaneous_resistance_model_ohm": 144.84931475198195,
+          "relaxation_30s_measured_mV": 72.55410000000052,
+          "relaxation_30s_model_mV": 25.295397358662264,
+          "end_of_rest_error_mV": 47.258702641338246
+        },
+        "C/10 rest after discharge": {
+          "current_mA": 0.1402053092400055,
+          "first_sample_delay_s": 0.048399987164884806,
+          "jump_measured_mV": 13.786100000000356,
+          "jump_model_mV": 40.215758441535684,
+          "instantaneous_resistance_measured_ohm": 98.32794545890634,
+          "instantaneous_resistance_model_ohm": 286.83477579792475,
+          "relaxation_30s_measured_mV": 173.08240000000018,
+          "relaxation_30s_model_mV": 142.51301628375268,
+          "end_of_rest_error_mV": -30.56938371624751
+        },
+        "C/2 rest after charge": {
+          "current_mA": 0.717257040977103,
+          "first_sample_delay_s": 0.04839999941759743,
+          "jump_measured_mV": 50.232799999999855,
+          "jump_model_mV": 104.55425677220643,
+          "instantaneous_resistance_measured_ohm": 70.03458611095523,
+          "instantaneous_resistance_model_ohm": 145.76957882459337,
+          "relaxation_30s_measured_mV": 171.3786000000006,
+          "relaxation_30s_model_mV": 131.21699689779297,
+          "end_of_rest_error_mV": 40.16160310220762
+        },
+        "C/2 rest after discharge": {
+          "current_mA": 0.7165621104061113,
+          "first_sample_delay_s": 0.04839999941032147,
+          "jump_measured_mV": 72.55840000000013,
+          "jump_model_mV": 136.32554696270338,
+          "instantaneous_resistance_measured_ohm": 101.259052001616,
+          "instantaneous_resistance_model_ohm": 190.24944939586734,
+          "relaxation_30s_measured_mV": 285.36440000000016,
+          "relaxation_30s_model_mV": 203.7876640107017,
+          "end_of_rest_error_mV": -81.57673598929848
+        },
+        "C/5 rest after charge": {
+          "current_mA": 0.2871264976975961,
+          "first_sample_delay_s": 0.0483999993884936,
+          "jump_measured_mV": 19.31620000000045,
+          "jump_model_mV": 41.58375677122006,
+          "instantaneous_resistance_measured_ohm": 67.27418108357392,
+          "instantaneous_resistance_model_ohm": 144.8273047060129,
+          "relaxation_30s_measured_mV": 104.74780000000017,
+          "relaxation_30s_model_mV": 49.49345819022266,
+          "end_of_rest_error_mV": 55.25434180977751
+        },
+        "C/5 rest after discharge": {
+          "current_mA": 0.2863935096132857,
+          "first_sample_delay_s": 0.04840000014519319,
+          "jump_measured_mV": 26.39979999999964,
+          "jump_model_mV": 73.550474628715,
+          "instantaneous_resistance_measured_ohm": 92.1801616092733,
+          "instantaneous_resistance_model_ohm": 256.8161363992832,
+          "relaxation_30s_measured_mV": 226.6608999999997,
+          "relaxation_30s_model_mV": 170.7349551846149,
+          "end_of_rest_error_mV": -55.925944815384824
+        }
+      },
+      "fit_time_s": 27.342904806137085
+    },
+    "lambda=4": {
+      "lambda": 4.0,
+      "rest_points": "trace",
+      "rest_weight": 6.893819875457113,
+      "n_rest_points": 101,
+      "parameters": {
+        "Ds": 1.2488051862235023e-13,
+        "k": 9.999999999999959e-09,
+        "R_contact": 135.3329911962364
+      },
+      "tau_R2_over_Ds_s": 200.1913531093046,
+      "training_rmse_curves_mV": 28.78595540610443,
+      "training_rmse_fitted_rest_points_mV": 40.16632154552551,
+      "training_rmse_rest_traces_mV": 40.16632154552551,
+      "k_R_contact_correlation": 0.47995094461830345,
+      "rest_jumps": {
+        "C/10 rest after charge": {
+          "current_mA": 0.1466875751679145,
+          "first_sample_delay_s": 0.04840000015246915,
+          "jump_measured_mV": 10.367800000000038,
+          "jump_model_mV": 21.22383185451593,
+          "instantaneous_resistance_measured_ohm": 70.67946953333934,
+          "instantaneous_resistance_model_ohm": 144.68731813325587,
+          "relaxation_30s_measured_mV": 72.55410000000052,
+          "relaxation_30s_model_mV": 25.15810375468508,
+          "end_of_rest_error_mV": 47.39599624531543
+        },
+        "C/10 rest after discharge": {
+          "current_mA": 0.1402053092400055,
+          "first_sample_delay_s": 0.048399987164884806,
+          "jump_measured_mV": 13.786100000000356,
+          "jump_model_mV": 39.90935090000525,
+          "instantaneous_resistance_measured_ohm": 98.32794545890634,
+          "instantaneous_resistance_model_ohm": 284.6493554084164,
+          "relaxation_30s_measured_mV": 173.08240000000018,
+          "relaxation_30s_model_mV": 141.12881327341054,
+          "end_of_rest_error_mV": -31.953586726589656
+        },
+        "C/2 rest after charge": {
+          "current_mA": 0.717257040977103,
+          "first_sample_delay_s": 0.04839999941759743,
+          "jump_measured_mV": 50.232799999999855,
+          "jump_model_mV": 104.44036218219122,
+          "instantaneous_resistance_measured_ohm": 70.03458611095523,
+          "instantaneous_resistance_model_ohm": 145.61078695012108,
+          "relaxation_30s_measured_mV": 171.3786000000006,
+          "relaxation_30s_model_mV": 130.3451366717514,
+          "end_of_rest_error_mV": 41.0334633282492
+        },
+        "C/2 rest after discharge": {
+          "current_mA": 0.7165621104061113,
+          "first_sample_delay_s": 0.04839999941032147,
+          "jump_measured_mV": 72.55840000000013,
+          "jump_model_mV": 135.9173170607315,
+          "instantaneous_resistance_measured_ohm": 101.259052001616,
+          "instantaneous_resistance_model_ohm": 189.6797431609947,
+          "relaxation_30s_measured_mV": 285.36440000000016,
+          "relaxation_30s_model_mV": 202.49639035124912,
+          "end_of_rest_error_mV": -82.86800964875107
+        },
+        "C/5 rest after charge": {
+          "current_mA": 0.2871264976975961,
+          "first_sample_delay_s": 0.0483999993884936,
+          "jump_measured_mV": 19.31620000000045,
+          "jump_model_mV": 41.5372601587265,
+          "instantaneous_resistance_measured_ohm": 67.27418108357392,
+          "instantaneous_resistance_model_ohm": 144.66536697868224,
+          "relaxation_30s_measured_mV": 104.74780000000017,
+          "relaxation_30s_model_mV": 49.22507423911959,
+          "end_of_rest_error_mV": 55.522725760880576
+        },
+        "C/5 rest after discharge": {
+          "current_mA": 0.2863935096132857,
+          "first_sample_delay_s": 0.04840000014519319,
+          "jump_measured_mV": 26.39979999999964,
+          "jump_model_mV": 73.08973556240295,
+          "instantaneous_resistance_measured_ohm": 92.1801616092733,
+          "instantaneous_resistance_model_ohm": 255.20737415137407,
+          "relaxation_30s_measured_mV": 226.6608999999997,
+          "relaxation_30s_model_mV": 169.93262607201797,
+          "end_of_rest_error_mV": -56.728273927981746
+        }
+      },
+      "fit_time_s": 12.638596773147583
+    },
+    "jump only, lambda=1": {
+      "lambda": 1.0,
+      "rest_points": "first sample only",
+      "rest_weight": 14.142135623730951,
+      "n_rest_points": 6,
+      "parameters": {
+        "Ds": 9.999999453724572e-12,
+        "k": 9.999999999703256e-09,
+        "R_contact": 112.95895030087982
+      },
+      "tau_R2_over_Ds_s": 2.5000001365688647,
+      "training_rmse_curves_mV": 32.97574409233499,
+      "training_rmse_fitted_rest_points_mV": 18.660545068829457,
+      "training_rmse_rest_traces_mV": 87.41975275657985,
+      "k_R_contact_correlation": 0.5767955478498754,
+      "rest_jumps": {
+        "C/10 rest after charge": {
+          "current_mA": 0.1466875751679145,
+          "first_sample_delay_s": 0.04840000015246915,
+          "jump_measured_mV": 10.367800000000038,
+          "jump_model_mV": 17.624201248650273,
+          "instantaneous_resistance_measured_ohm": 70.67946953333934,
+          "instantaneous_resistance_model_ohm": 120.14788047641868,
+          "relaxation_30s_measured_mV": 72.55410000000052,
+          "relaxation_30s_model_mV": 17.85374806126061,
+          "end_of_rest_error_mV": 54.7003519387399
+        },
+        "C/10 rest after discharge": {
+          "current_mA": 0.1402053092400055,
+          "first_sample_delay_s": 0.048399987164884806,
+          "jump_measured_mV": 13.786100000000356,
+          "jump_model_mV": 18.812309823129425,
+          "instantaneous_resistance_measured_ohm": 98.32794545890634,
+          "instantaneous_resistance_model_ohm": 134.17687193946585,
+          "relaxation_30s_measured_mV": 173.08240000000018,
+          "relaxation_30s_model_mV": 20.336887883952937,
+          "end_of_rest_error_mV": -152.74551211604725
+        },
+        "C/2 rest after charge": {
+          "current_mA": 0.717257040977103,
+          "first_sample_delay_s": 0.04839999941759743,
+          "jump_measured_mV": 50.232799999999855,
+          "jump_model_mV": 86.22248556507816,
+          "instantaneous_resistance_measured_ohm": 70.03458611095523,
+          "instantaneous_resistance_model_ohm": 120.21141744055831,
+          "relaxation_30s_measured_mV": 171.3786000000006,
+          "relaxation_30s_model_mV": 87.40879680328729,
+          "end_of_rest_error_mV": 83.96980319671331
+        },
+        "C/2 rest after discharge": {
+          "current_mA": 0.7165621104061113,
+          "first_sample_delay_s": 0.04839999941032147,
+          "jump_measured_mV": 72.55840000000013,
+          "jump_model_mV": 91.33518420605968,
+          "instantaneous_resistance_measured_ohm": 101.259052001616,
+          "instantaneous_resistance_model_ohm": 127.46303897410301,
+          "relaxation_30s_measured_mV": 285.36440000000016,
+          "relaxation_30s_model_mV": 95.6926966569207,
+          "end_of_rest_error_mV": -189.67170334307949
+        },
+        "C/5 rest after charge": {
+          "current_mA": 0.2871264976975961,
+          "first_sample_delay_s": 0.0483999993884936,
+          "jump_measured_mV": 19.31620000000045,
+          "jump_model_mV": 34.49733616848505,
+          "instantaneous_resistance_measured_ohm": 67.27418108357392,
+          "instantaneous_resistance_model_ohm": 120.14682185417077,
+          "relaxation_30s_measured_mV": 104.74780000000017,
+          "relaxation_30s_model_mV": 34.94640528141968,
+          "end_of_rest_error_mV": 69.8013947185805
+        },
+        "C/5 rest after discharge": {
+          "current_mA": 0.2863935096132857,
+          "first_sample_delay_s": 0.04840000014519319,
+          "jump_measured_mV": 26.39979999999964,
+          "jump_model_mV": 37.936069837653186,
+          "instantaneous_resistance_measured_ohm": 92.1801616092733,
+          "instantaneous_resistance_model_ohm": 132.46134623957744,
+          "relaxation_30s_measured_mV": 226.6608999999997,
+          "relaxation_30s_model_mV": 40.66890332093287,
+          "end_of_rest_error_mV": -185.99199667906686
+        }
+      },
+      "fit_time_s": 15.34817886352539
+    }
+  }
+}

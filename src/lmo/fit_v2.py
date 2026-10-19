@@ -133,7 +133,7 @@ class V2Residual:
     def rest_frames(self, fit: dict) -> pd.DataFrame:
         """Model rest traces (fine grid) and the model on the measured rest times, for figures."""
         rows = []
-        for rate in sorted({r for r, _ in REST_TRAINING}):
+        for rate, _ in REST_TRAINING:
             frames = self.sims[rate].run(fit, include_rests=True)
             for after in REST_KINDS:
                 f = frames[f"rest after {after}"]
@@ -239,7 +239,7 @@ def summarise(result, res: V2Residual, elapsed: float, loo: list[dict] | None = 
 def rest_jumps(res: V2Residual, fit: dict) -> dict:
     """Model vs measured instantaneous jump and 30 s relaxation of every training rest."""
     out = {}
-    for rate in sorted({r for r, _ in REST_TRAINING}):
+    for rate, _ in REST_TRAINING:
         frames = res.sims[rate].run(fit, include_rests=True)
         for after in REST_KINDS:
             r = res.rests[(rate, after)]

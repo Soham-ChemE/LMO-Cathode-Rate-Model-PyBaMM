@@ -316,7 +316,7 @@ def fig_weighting(kind: str):
     axes[1].legend(fontsize=8)
     axes[1].set_ylabel("Fitted value")
     axes[2].plot(x, [e["training_rmse_curves_mV"] for e in w], "o-", color="k", label="curves RMSE (mV)")
-    axes[2].plot(x, [e["training_rmse_rests_mV"] for e in w], "s-", color="#2ca02c", label="rests RMSE (mV)")
+    axes[2].plot(x, [e["training_rmse_rest_traces_mV"] for e in w], "s-", color="#2ca02c", label="rest traces RMSE (mV)")
     ax2 = axes[2].twinx()
     ax2.plot(x, [e["k_R_contact_correlation"] for e in w], "^--", color="#9467bd", label="k vs R_contact corr.")
     ax2.set_ylabel("Correlation")

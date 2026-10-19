@@ -146,7 +146,9 @@ def load_v2(kinds, H):
 
     # --- rest jumps at the optimum
     jrows = []
-    for key, e in fit2["rest_jumps"].items():
+    order = [f"{r} rest after {a}" for r in ("C/10", "C/5", "C/2") for a in ("charge", "discharge")]
+    for key in [k for k in order if k in fit2["rest_jumps"]] + [k for k in fit2["rest_jumps"] if k not in order]:
+        e = fit2["rest_jumps"][key]
         je = jump["rest_jumps"][key] if jump else None
         jrows.append(
             f"| {key} | {e['current_mA']:.3f} | {e['jump_measured_mV']:.0f} / {e['jump_model_mV']:.0f}{(' / ' + format(je['jump_model_mV'], '.0f')) if je else ''} | "
@@ -160,19 +162,27 @@ def load_v2(kinds, H):
     sh2 = two2["shares"]
     sh1 = c["v1"]["two_c_shares"]
     e1, e2 = c["v1"]["two_c"], c["v2"]["two_c"]
-    improved = c["two_c_improved"]
+    # "Better" means better on the curve, not just a smaller capacity error with a worse V-Q RMSE.
+    improved = c["two_c_improved"] and e2["vq_rmse_mV"] < e1["vq_rmse_mV"]
+    smaller_cap_error = c["two_c_improved"]
     at_bound = {n: (abs(p2[n]["log10"] - lo) < 0.02 or abs(p2[n]["log10"] - hi) < 0.02) for n, (lo, hi) in {"Ds": (-17.0, -11.0), "k": (-14.0, -8.0), "R_contact": (-1.0, 3.0)}.items()}
     bound_txt = ", ".join(n for n, b in at_bound.items() if b)
     r_up = p2["R_contact"]["value"] > p1["R_contact"]["value"]
     R_free_chg = rests["after_charge_mean_ohm_c10_c5_c2"]
     R_free_dis = rests["after_discharge_mean_ohm_c10_c5_c2"]
 
-    verdict = (
-        f"the 2C capacity error moves from {e1['capacity_error_pct']:+.1f} % to {e2['capacity_error_pct']:+.1f} %"
-        + (" (better)" if improved else " (not better)")
-    )
+    verdict = f"the 2C capacity error moves from {e1['capacity_error_pct']:+.1f} % to {e2['capacity_error_pct']:+.1f} %"
+    if improved:
+        verdict += " (better)"
+    elif smaller_cap_error:
+        verdict += (
+            f": a smaller number, but the wrong answer for the wrong reason, because the {p2['R_contact']['value']:.0f} Ω resistance "
+            f"simply pulls the whole 2C curve down (V-Q RMSE {e1['vq_rmse_mV']:.0f} to {e2['vq_rmse_mV']:.0f} mV)"
+        )
+    else:
+        verdict += " (worse)"
     key_bullet = (
-        f"- **v2, rests added to the fit (not an improvement):** refitting on the C/5 and C/2 curves plus the C/10, C/5 and C/2 rests "
+        f"- **v2, rests added to the fit (not an improvement):** refitting on the C/5 and C/2 curves plus the C/10, C/5 and C/2 rests, "
         f"{verdict}. The model-free rest jumps give {R_free_chg:.0f} Ω (after charge), yet the v2 fit moves R_contact "
         f"{'up' if r_up else 'down'} to {p2['R_contact']['value']:.0f} Ω: this model has no double-layer capacitance and one particle size, so it cannot "
         f"reproduce the log-time relaxation the rests show and instead matches their mean level with a bigger ohmic drop (see \"v1 vs v2\")."
@@ -237,8 +247,8 @@ double-layer capacitance), and the particle-surface concentration relaxes as sqr
 Nothing relaxes like log(t). Forced to put a 100 to 280 mV relaxation somewhere, the least-squares fit can only
 match its mean level, which it does by making the instantaneous jump larger (bigger R_contact, k at the bound so that
 charge transfer costs nothing) and the diffusion faster. The curves and the rests are therefore inconsistent inside
-this model structure: the curves need about {1000 * fit1['parameters']['R_contact']['value'] * 0.287 / 0.287 / 1000 * 1:.0f} Ω of current-proportional loss, the rests say only {R_free_chg:.0f} Ω of it is
-instantaneous, and the remainder relaxes over seconds in a way that is neither Butler-Volmer-instantaneous nor
+this model structure: the curves need about {p1['R_contact']['value']:.0f} Ω of resistance plus a charge-transfer overpotential, the rests say only
+{R_free_chg:.0f} Ω of all that is instantaneous, and the remainder relaxes over seconds in a way that is neither Butler-Volmer-instantaneous nor
 single-particle Fickian. That is the finding of v2.
 
 ### Sensitivity to the rest weighting
@@ -256,8 +266,8 @@ and the curves need more current-proportional loss than {R_free_chg:.0f} Ω prov
 
 {val_table}
 
-{verdict[0].upper() + verdict[1:]}; the 2C V-Q RMSE goes from {e1['vq_rmse_mV']:.0f} to {e2['vq_rmse_mV']:.0f} mV and the mean-voltage error
-from {e1['mean_voltage_error_mV']:+.0f} to {e2['mean_voltage_error_mV']:+.0f} mV. {'The jump-only variant predicts ' + format(jval['headline']['predicted_mAh'], '.3f') + ' mAh (' + format(jval['headline']['error_pct'], '+.1f') + ' %).' if jval else ''} Nothing was tuned on 2C or on the CVs.
+{verdict[0].upper() + verdict[1:]}. In numbers: 2C V-Q RMSE {e1['vq_rmse_mV']:.0f} mV (v1) against {e2['vq_rmse_mV']:.0f} mV (v2), mean-voltage error
+{e1['mean_voltage_error_mV']:+.0f} against {e2['mean_voltage_error_mV']:+.0f} mV, energy error {e1['energy_error_pct']:+.1f} % against {e2['energy_error_pct']:+.1f} %. {'The jump-only variant, with no diffusion and no charge-transfer loss left, predicts ' + format(jval['headline']['predicted_mAh'], '.3f') + ' mAh (' + format(jval['headline']['error_pct'], '+.1f') + ' %).' if jval else ''} Nothing was tuned on 2C or on the CVs; the v2 fits are reported as they came out.
 
 ![v1 vs v2 at 2C](figures/v2_comparison_2c.png)
 
