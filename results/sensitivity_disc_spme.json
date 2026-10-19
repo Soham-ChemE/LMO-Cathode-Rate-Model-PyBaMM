@@ -13,15 +13,15 @@
         "plausibility": "plausible"
       },
       "parameters": {
-        "Ds": 1.1400733780325043e-14,
-        "k": 2.4074398698271813e-11,
-        "R_contact": 96.52624808094009
+        "Ds": 1.1400733779852808e-14,
+        "k": 2.4074398723108554e-11,
+        "R_contact": 96.52624810440244
       },
-      "training_rmse_V": 0.02620382772897025,
-      "predicted_2c_capacity_mAh": 0.9893702789532445,
-      "predicted_2c_error_pct": 20.22667775376828,
-      "predicted_2c_vq_rmse_mV": 66.06684853360801,
-      "fit_time_s": 11.414645195007324
+      "training_rmse_V": 0.026203827729013522,
+      "predicted_2c_capacity_mAh": 0.989370278796944,
+      "predicted_2c_error_pct": 20.22667773477489,
+      "predicted_2c_vq_rmse_mV": 66.06684852973662,
+      "fit_time_s": 7.218867063522339
     },
     "12.0": {
       "geometry": {
@@ -35,15 +35,15 @@
         "plausibility": "light coating"
       },
       "parameters": {
-        "Ds": 1.1402076686988739e-14,
-        "k": 2.4116921806137237e-11,
-        "R_contact": 99.46390991012944
+        "Ds": 1.1402076687448812e-14,
+        "k": 2.411692179274838e-11,
+        "R_contact": 99.46390990002011
       },
-      "training_rmse_V": 0.02621100771479961,
-      "predicted_2c_capacity_mAh": 0.988962230020633,
-      "predicted_2c_error_pct": 20.177092306769854,
-      "predicted_2c_vq_rmse_mV": 66.29310466525607,
-      "fit_time_s": 11.88309359550476
+      "training_rmse_V": 0.026211007714770983,
+      "predicted_2c_capacity_mAh": 0.9889622300731217,
+      "predicted_2c_error_pct": 20.177092313148194,
+      "predicted_2c_vq_rmse_mV": 66.29310466629184,
+      "fit_time_s": 7.6589131355285645
     },
     "14.0": {
       "geometry": {
@@ -57,15 +57,15 @@
         "plausibility": "implausibly porous"
       },
       "parameters": {
-        "Ds": 1.14028938791199e-14,
-        "k": 2.4104054989553802e-11,
-        "R_contact": 100.95006608653149
+        "Ds": 1.1402893879222602e-14,
+        "k": 2.4104054978777542e-11,
+        "R_contact": 100.95006607352141
       },
-      "training_rmse_V": 0.026213856144964343,
-      "predicted_2c_capacity_mAh": 0.9889294310903822,
-      "predicted_2c_error_pct": 20.173106633759645,
-      "predicted_2c_vq_rmse_mV": 66.3895857508461,
-      "fit_time_s": 12.020538330078125
+      "training_rmse_V": 0.026213856144937087,
+      "predicted_2c_capacity_mAh": 0.9889294311959564,
+      "predicted_2c_error_pct": 20.173106646588852,
+      "predicted_2c_vq_rmse_mV": 66.38958575334976,
+      "fit_time_s": 7.480385065078735
     },
     "16.0": {
       "geometry": {
@@ -79,16 +79,16 @@
         "plausibility": "implausibly porous"
       },
       "parameters": {
-        "Ds": 1.140575279632164e-14,
-        "k": 2.4041383484898082e-11,
-        "R_contact": 101.82178964668879
+        "Ds": 1.1405752795648171e-14,
+        "k": 2.4041383501031212e-11,
+        "R_contact": 101.82178965521804
       },
-      "training_rmse_V": 0.026215296028631607,
-      "predicted_2c_capacity_mAh": 0.9890245545337071,
-      "predicted_2c_error_pct": 20.1846658808997,
-      "predicted_2c_vq_rmse_mV": 66.44476055524656,
-      "fit_time_s": 11.33137583732605
+      "training_rmse_V": 0.02621529602868147,
+      "predicted_2c_capacity_mAh": 0.9890245545203719,
+      "predicted_2c_error_pct": 20.184665879279226,
+      "predicted_2c_vq_rmse_mV": 66.44476055544159,
+      "fit_time_s": 7.609055995941162
     }
   },
-  "spread_of_2c_error_pct": 0.053571120008633955
+  "spread_of_2c_error_pct": 0.053571088186036064
 }

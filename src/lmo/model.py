@@ -7,8 +7,8 @@ with the cell measured here: pseudo-OCV from the C/10 data, 85 um coating, LMO d
 
 The electrode area is unknown (coin-cell disc). For a chosen disc diameter the active-material
 volume fraction follows from the active mass and the coating volume, and the porosity from what
-is left after active material and binder/carbon. 14 mm is the default; 12 and 16 mm are run as
-a sensitivity check.
+is left after active material and binder/carbon. 10 mm is the default (the only diameter that gives a plausible
+coating); 12, 14 and 16 mm are run as a sensitivity check.
 
 Three effective parameters are fitted: particle diffusion time constant (R^2/Ds, implemented by
 fitting Ds at a fixed radius), the reaction rate constant k of the Butler-Volmer exchange
@@ -27,7 +27,7 @@ from .ocv import LMO_C_MAX_MOL_M3, LMO_DENSITY_KG_M3, active_mass_g
 COATING_THICKNESS_M = 85e-6
 ACTIVE_WT_FRACTION = 0.942
 INACTIVE_DENSITY_KG_M3 = 1800.0  # PVDF + carbon black blend, assumed
-DEFAULT_DISC_MM = 14.0
+DEFAULT_DISC_MM = 10.0
 PARTICLE_RADIUS_M = 5e-6  # fixed; only the time constant R^2/Ds is identifiable
 T_K = 298.15
 F = 96485.33212

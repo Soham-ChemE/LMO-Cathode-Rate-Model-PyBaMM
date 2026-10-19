@@ -191,11 +191,11 @@ def fig_sensitivity(kind: str = "SPMe"):
     axes[1].plot(d, [sens["discs"][x]["geometry"]["active_volume_fraction"] for x in discs], "s-", color="k", label="active volume fraction")
     axes[1].set_ylabel("Volume fraction")
     axes[1].legend(fontsize=8)
-    ref = sens["discs"]["14.0"]["parameters"] if "14.0" in sens["discs"] else sens["discs"][discs[0]]["parameters"]
+    ref = sens["discs"]["10.0"]["parameters"] if "10.0" in sens["discs"] else sens["discs"][discs[0]]["parameters"]
     for name, marker, color, label in (("Ds", "o", "#17becf", "D$_s$"), ("k", "s", "#ff7f0e", "k"), ("R_contact", "^", "#7f7f7f", "R$_{contact}$")):
         axes[2].plot(d, [sens["discs"][x]["parameters"][name] / ref[name] for x in discs], marker=marker, ls="-", color=color, label=label)
     axes[2].axhline(1, color="k", lw=0.6)
-    axes[2].set_ylabel("Refitted parameter / value at 14 mm")
+    axes[2].set_ylabel("Refitted parameter / value at 10 mm")
     axes[2].set_ylim(0.9, 1.1)
     axes[2].legend(fontsize=8)
     for ax in axes:

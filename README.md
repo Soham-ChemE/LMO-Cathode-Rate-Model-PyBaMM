@@ -6,12 +6,18 @@ and then asked to predict the 2C cycle it had never seen and the cyclic voltammo
 technique. All data were measured by me on one coin cell (MSE 5550, University of Pennsylvania, 2026;
 see `data/README.md`).
 
-**Headline: the model fitted on C/5 and C/2 predicted the 2C discharge capacity as 0.989 mAh against
-0.823 mAh measured, an over-prediction of 20.2 %.** It got the average 2C discharge voltage to
-18 mV and reproduced 30 % of the measured
-42 % capacity loss between C/10 and 2C. The SPMe gives 0.992 mAh (+20.5 %), so the two model fidelities agree on the 2C result to within 0.3 percentage points.
-The same parameters put the three CV peak positions within 80 mV (oxidation)
-and 70 mV (reduction) of the measured ones.
+## Key results
+
+- **Training (C/5, C/2):** voltage RMSE 26 mV with three fitted parameters; C/10, not used in the fit,
+  reproduced to 1.0 % in capacity.
+- **Blind 2C prediction:** average discharge voltage within 17 mV of measured; discharge capacity
+  0.988 mAh against 0.823 mAh measured (+20.1 %). The model predicts a
+  30 % capacity loss from C/10 to 2C; the cell lost 42 %. The SPMe gives 0.989 mAh (+20.2 %), so the two model fidelities agree on the 2C result to within 0.2 percentage points.
+- **Cyclic voltammetry, a technique never used in the fit:** peak potentials at all three scan rates within
+  80 mV (oxidation) and 68 mV (reduction); b-values 0.60 / 0.69 measured vs 0.66 / 0.70 model.
+- **Diagnosis:** at 2C the model assigns 74 % of the voltage loss to ohmic/contact resistance; the shape of
+  the measured 2C curve says the real cell has a transport loss that grows with time, which the fit could not
+  separate from resistance (see "Why 2C loses capacity" and "Next step").
 
 ![Measured vs model at all four rates](figures/headline_measured_vs_model.png)
 
@@ -19,14 +25,14 @@ and 70 mV (reduction) of the measured ones.
 
 ## Results
 
-### Galvanostatic cycles (DFN, 14 mm disc assumption)
+### Galvanostatic cycles (DFN, 10 mm disc)
 
 | Rate | Cycle | Role | Q meas (mAh) | Q model (mAh) | Error (%) | V̄ meas (V) | V̄ model (V) | E meas (mWh) | E model (mWh) | V-Q RMSE (mV) |
 |---|---|---|---|---|---|---|---|---|---|---|
 | C/10 | 1 | low-rate check | 1.430 | 1.415 | -1.0 | 4.036 | 4.044 | 5.77 | 5.72 | 25 |
 | C/5 | 1 | training | 1.422 | 1.401 | -1.5 | 4.016 | 4.023 | 5.71 | 5.64 | 26 |
 | C/2 | 1 | training | 1.361 | 1.360 | -0.1 | 3.960 | 3.965 | 5.39 | 5.39 | 21 |
-| 2C | 2 | blind prediction | 0.823 | 0.989 | +20.2 | 3.696 | 3.678 | 3.04 | 3.64 | 66 |
+| 2C | 2 | blind prediction | 0.823 | 0.988 | +20.1 | 3.696 | 3.679 | 3.04 | 3.63 | 66 |
 
 V-Q RMSE is computed on the measured capacity axis with the model held at the cut-off voltage beyond its own
 capacity, so it penalises a capacity miss as well as a voltage miss. Charge-step metrics are in
@@ -37,8 +43,8 @@ parasitic oxidation near 4.5 V (first-cycle coulombic efficiency at C/10 was 91 
 
 | Model | Train RMSE (mV) | τ = R²/Ds (s) | Ds (m²/s) at R = 5 µm | k (m^2.5 mol^-0.5 s^-1) | R_contact (Ω) | 2C prediction (mAh) |
 |---|---|---|---|---|---|---|
-| SPMe | 26.2 | 2.19e+03 (2.11e+03 to 2.27e+03); LOO 900 to 2.34e+03 | 1.14e-14 (1.1e-14 to 1.18e-14); LOO 1.07e-14 to 2.78e-14 | 2.39e-11 (1.55e-11 to 3.68e-11); LOO 1.19e-11 to 1e-08 | 101 (92.3 to 110); LOO 84.9 to 126 | 0.992 (+20.5 %) |
-| DFN | 26.2 | 2.19e+03 (2.11e+03 to 2.27e+03); LOO 900 to 2.34e+03 | 1.14e-14 (1.1e-14 to 1.18e-14); LOO 1.07e-14 to 2.78e-14 | 2.41e-11 (1.56e-11 to 3.72e-11); LOO 1.2e-11 to 1e-08 | 101 (92.6 to 110); LOO 85 to 126 | 0.989 (+20.2 %) |
+| SPMe | 26.2 | 2.19e+03 (2.12e+03 to 2.27e+03); LOO 901 to 2.34e+03 | 1.14e-14 (1.1e-14 to 1.18e-14); LOO 1.07e-14 to 2.78e-14 | 2.41e-11 (1.56e-11 to 3.71e-11); LOO 1.19e-11 to 1e-08 | 96.5 (88.2 to 106); LOO 80.6 to 122 | 0.989 (+20.2 %) |
+| DFN | 26.2 | 2.19e+03 (2.11e+03 to 2.27e+03); LOO 902 to 2.34e+03 | 1.14e-14 (1.1e-14 to 1.18e-14); LOO 1.07e-14 to 2.77e-14 | 2.41e-11 (1.56e-11 to 3.71e-11); LOO 1.19e-11 to 9.83e-09 | 96.5 (88.2 to 106); LOO 80.5 to 122 | 0.988 (+20.1 %) |
 
 Intervals in brackets are 95 % Jacobian intervals from the least-squares covariance; "LOO" is the range of
 refits that each leave one of the four training steps out. The Jacobian intervals are far too narrow because
@@ -52,15 +58,15 @@ Only τ = R²/Ds is identifiable; the 5 µm radius is a fixed choice.
 | Scan rate | Ox. peak V (meas / model) | Ox. peak mA (meas / model) | Red. peak V (meas / model) | Red. peak mA (meas / model) | ΔEp mV (meas / model) |
 |---|---|---|---|---|---|
 | 0.1 mV/s | 4.35 / 4.35 | 1.62 / 1.65 | 3.81 / 3.79 | -1.28 / -1.45 | 548 / 566 |
-| 0.2 mV/s | 4.42 / 4.48 | 2.42 / 2.65 | 3.72 / 3.66 | -2.06 / -2.38 | 693 / 815 |
-| 0.3 mV/s | 4.49 / 4.57 | 3.12 / 3.42 | 3.64 / 3.57 | -2.73 / -3.12 | 856 / 1006 |
+| 0.2 mV/s | 4.42 / 4.48 | 2.42 / 2.65 | 3.72 / 3.66 | -2.06 / -2.38 | 693 / 813 |
+| 0.3 mV/s | 4.49 / 4.57 | 3.12 / 3.42 | 3.64 / 3.57 | -2.73 / -3.12 | 856 / 1004 |
 
 b-value (slope of log peak current vs log scan rate; 0.5 = semi-infinite diffusion, 1.0 = surface/capacitive):
 measured 0.60 (oxidation) and 0.69 (reduction); model
 0.66 and 0.70. Both sit between the two limits, as expected for a porous
 electrode at scan rates where the sweep takes about as long as a 1C discharge. An apparent Randles-Sevcik
-diffusivity from the measured peaks (planar-electrode formula, geometric 14 mm disc area, concentration of the
-cycling lithium) is 4.7e-14 m²/s, 4.1 times the fitted solid-state Ds of
+diffusivity from the measured peaks (planar-electrode formula, geometric 10 mm disc area, concentration of the
+cycling lithium) is 1.8e-13 m²/s, 15.9 times the fitted solid-state Ds of
 1.1e-14 m²/s. The two numbers are not expected to agree: Randles-Sevcik assumes a flat electrode, while
 the real one is porous with a much larger internal area, so the apparent value is an upper bound.
 
@@ -69,9 +75,9 @@ the real one is porous with a much larger internal area, so the apparent value i
 ### Why 2C loses capacity: overpotential breakdown (DFN)
 
 Capacity-weighted mean voltage loss on discharge: C/10 20 mV, C/5 41 mV,
-C/2 98 mV, 2C 374 mV. At 2C the model attributes 77 % of the loss to the
-lumped contact/ohmic resistance, 15 % to charge transfer, 6 % to solid-state
-diffusion in the particles and 1 % to the electrolyte. When the 2C
+C/2 98 mV, 2C 374 mV. At 2C the model attributes 74 % of the loss to the
+lumped contact/ohmic resistance, 17 % to charge transfer, 6 % to solid-state
+diffusion in the particles and 3 % to the electrolyte. When the 2C
 discharge hits 3.5 V the bulk open-circuit voltage of the particles is still 3.95 V, i.e. the model
 has 0.15 mAh of lithium it could not deliver at that rate.
 
@@ -91,7 +97,7 @@ single biggest limitation of this work, and it is visible in the k / R_contact c
 | SPMe | 14 | 8.5 | 1.06 | 0.23 | 0.73 | implausibly porous | 26.2 | 101 | 1.14e-14 | 0.989 (+20.2 %) |
 | SPMe | 16 | 6.5 | 0.81 | 0.18 | 0.80 | implausibly porous | 26.2 | 102 | 1.14e-14 | 0.989 (+20.2 %) |
 | DFN | 10 | 16.6 | 2.07 | 0.46 | 0.48 | plausible | 26.2 | 97 | 1.14e-14 | 0.988 (+20.1 %) |
-| DFN | 12 | 11.5 | 1.44 | 0.32 | 0.64 | light coating | 26.2 | 99 | 1.14e-14 | 0.989 (+20.2 %) |
+| DFN | 12 | 11.5 | 1.44 | 0.32 | 0.64 | light coating | 26.2 | 99 | 1.14e-14 | 0.988 (+20.1 %) |
 | DFN | 14 | 8.5 | 1.06 | 0.23 | 0.73 | implausibly porous | 26.2 | 101 | 1.14e-14 | 0.989 (+20.2 %) |
 | DFN | 16 | 6.5 | 0.81 | 0.18 | 0.80 | implausibly porous | 26.2 | 102 | 1.14e-14 | 0.989 (+20.2 %) |
 
@@ -109,8 +115,18 @@ the disc is small, or the 1.434 mAh (110 mAh/g) capacity under-states the active
 diameter: the training RMSE, τ, k and the 2C prediction do not change to the precision shown
 (2C spans 0.988 to 0.989 mAh), and only R_contact drifts by a few ohms as the electrolyte and solid
 ohmic paths take up slack. The model is not electrolyte-limited with a lithium-metal counter electrode and this
-electrolyte, so the unknown area does not affect the headline result, and the 14 mm assumption was kept for the
-headline figures as the mid-point of the 12 to 16 mm range coin cells usually use.
+electrolyte, so the unknown area does not affect the headline result. The headline uses the 10 mm disc, the only
+diameter that gives a physically plausible coating.
+
+
+## Next step
+
+The weakest point is the 0.94 correlation between the rate constant and the contact resistance: C/5 and C/2 alone
+cannot tell an instantaneous ohmic drop from a transport loss that builds up over time, so the fit chose the
+ohmic explanation and over-predicts 2C capacity. Every galvanostatic step in this data ends with a 30 s rest; the
+instantaneous voltage jump at the start of each rest is the ohmic part and the slow relaxation that follows is
+the diffusion part. Adding those relaxations to the training set, still without touching 2C, is the direct way
+to break that correlation.
 
 ## Method
 
@@ -126,7 +142,7 @@ headline figures as the mid-point of the 12 to 16 mm range coin cells usually us
 3. **Model** (`src/lmo/model.py`): PyBaMM `DFN` (and the other fidelity for comparison) with
    `working electrode = positive` and a contact resistance, starting from `Xu2019` for the lithium counter
    electrode, separator and electrolyte. Positive electrode: measured OCP, 85 µm, c_max = 23671 mol/m³
-   from the LMO density, 14 mm disc (ε_active = 0.23, porosity 0.73),
+   from the LMO density, 10 mm disc (ε_active = 0.46, porosity 0.48),
    25 °C, Butler-Volmer kinetics, 5 µm particles.
 4. **Fit** (`src/lmo/fit.py`): scipy `least_squares` in log10 space on the voltage-time curves of C/5 cycle 1
    and C/2 cycle 1 (charge and discharge, 300 points each), simulating the full charge/rest/discharge protocol
@@ -136,7 +152,7 @@ headline figures as the mid-point of the 12 to 16 mm range coin cells usually us
    run's own first cycle (2C is simulated through its cycle 1 so that cycle 2 carries the right history); CVs
    simulated in voltage-control mode by feeding the model the measured voltage programme.
 6. **Diagnostics** (`src/lmo/diagnostics.py`): PyBaMM's voltage-component variables, checked to close to the
-   terminal voltage to better than 6e-04 µV; CV b-values and Randles-Sevcik.
+   terminal voltage to better than 1e-03 µV; CV b-values and Randles-Sevcik.
 7. **Reproduce**: `pip install -r requirements.txt && pip install -e . && make all` regenerates
    `data/processed/`, `results/*.json`, `figures/*.png` and this README (`python scripts/write_readme.py`).
    `make test` runs the parser tests. `python scripts/run_all.py --fast` skips the DFN.
@@ -148,13 +164,13 @@ headline figures as the mid-point of the 12 to 16 mm range coin cells usually us
 - The electrode area was never entered in EC-Lab (surface area and characteristic mass are at the 0.001
   defaults in the `.mpr` settings), so it is derived from the capacity: ε_active = 0.358 / A[cm²].
   Only a 10 mm disc gives a conventional coating; the 12 to 16 mm discs imply light to implausibly porous
-  coatings, which points to the nominal capacity under-stating the loading. The headline uses 14 mm; the
-  sensitivity table shows the prediction does not depend on this choice.
+  coatings. The headline therefore uses 10 mm; the sensitivity table shows the prediction does not depend on
+  this choice.
 - The electrolyte is assumed to be 1 M LiPF6 in carbonates with the `Xu2019` / Valoen2005 transport
   properties, and the lithium-metal kinetics are Xu2019's.
 - The fitted parameters are effective values: τ = R²/Ds at an assumed 5 µm radius, a rate constant that absorbs
-  the unknown real surface area, and a contact resistance of about 101 Ω that lumps current-collector contact,
-  separator and lithium-metal interphase resistance. The round-trip IR drop of that resistance at the C/10 current is 28 mV, about half of the
+  the unknown real surface area, and a contact resistance of about 97 Ω that lumps current-collector contact,
+  separator and lithium-metal interphase resistance. The round-trip IR drop of that resistance at the C/10 current is 27 mV, about half of the
   54 mV mean charge/discharge hysteresis measured at C/10; the rest is kinetic and intrinsic hysteresis
   that the averaged pseudo-OCV absorbs.
 - The pseudo-OCV is a C/10 average, not a true equilibrium curve, and is linearly extrapolated outside the

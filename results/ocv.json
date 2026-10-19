@@ -9,8 +9,8 @@
     "sto_min": 0.26418116983604967,
     "sto_max": 1.0
   },
-  "ocv_at_x0_V": 3.6449061328301844,
-  "ocv_at_x1_V": 4.4395590787770765,
+  "ocv_at_x0_V": 3.6449061328301835,
+  "ocv_at_x1_V": 4.439559078777078,
   "mean_charge_discharge_hysteresis_mV": 53.747226821262075,
   "median_charge_discharge_hysteresis_mV": 49.66017218473784,
   "dqdv_peaks_discharge": [

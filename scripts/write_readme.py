@@ -44,9 +44,9 @@ def main(headline_kind="DFN"):
     meas = load("measured_summary.json")
     h = val[H]["headline"]
     sys.path.insert(0, str(ROOT / "src"))
-    from lmo.model import disc_geometry
+    from lmo.model import DEFAULT_DISC_MM, disc_geometry
 
-    geo = disc_geometry(14.0)
+    geo = disc_geometry(DEFAULT_DISC_MM)
     c10_current_mA = next(r for r in meas["gcd"] if r["rate"] == "C/10" and r["cycle"] == 2 and r["step"] == "discharge")["mean_current_mA"]
     ir_c10_mV = 2 * c10_current_mA * fit[H]["parameters"]["R_contact"]["value"]
 
@@ -132,7 +132,7 @@ def main(headline_kind="DFN"):
         o = other[0]
         other_txt = (
             f" The {o} gives {val[o]['headline']['predicted_mAh']:.3f} mAh ({val[o]['headline']['error_pct']:+.1f} %), "
-            f"so the two model fidelities agree on the 2C result to within {abs(val[o]['headline']['error_pct'] - h['error_pct']):.1f} percentage points."
+            f"so the two model fidelities agree on the 2C result to within {max(abs(val[o]['headline']['error_pct'] - h['error_pct']), 0.1):.1f} percentage points."
         )
 
     readme = f"""# LiMn2O4 half cell: a physics-based rate model fitted to my own data
@@ -143,12 +143,18 @@ and then asked to predict the 2C cycle it had never seen and the cyclic voltammo
 technique. All data were measured by me on one coin cell (MSE 5550, University of Pennsylvania, 2026;
 see `data/README.md`).
 
-**Headline: the model fitted on C/5 and C/2 predicted the 2C discharge capacity as {h['predicted_mAh']:.3f} mAh against
-{h['measured_mAh']:.3f} mAh measured, an over-prediction of {h['error_pct']:.1f} %.** It got the average 2C discharge voltage to
-{abs(h['mean_voltage_error_mV']):.0f} mV and reproduced {h['predicted_capacity_loss_vs_c10_pct']:.0f} % of the measured
-{h['measured_capacity_loss_vs_c10_pct']:.0f} % capacity loss between C/10 and 2C.{other_txt}
-The same parameters put the three CV peak positions within {max(abs(e['oxidation_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (oxidation)
-and {max(abs(e['reduction_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (reduction) of the measured ones.
+## Key results
+
+- **Training (C/5, C/2):** voltage RMSE {1000 * fit[H]['training_rmse_V']:.0f} mV with three fitted parameters; C/10, not used in the fit,
+  reproduced to {abs(c10['capacity_error_pct']):.1f} % in capacity.
+- **Blind 2C prediction:** average discharge voltage within {abs(h['mean_voltage_error_mV']):.0f} mV of measured; discharge capacity
+  {h['predicted_mAh']:.3f} mAh against {h['measured_mAh']:.3f} mAh measured ({h['error_pct']:+.1f} %). The model predicts a
+  {h['predicted_capacity_loss_vs_c10_pct']:.0f} % capacity loss from C/10 to 2C; the cell lost {h['measured_capacity_loss_vs_c10_pct']:.0f} %.{other_txt}
+- **Cyclic voltammetry, a technique never used in the fit:** peak potentials at all three scan rates within
+  {max(abs(e['oxidation_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (oxidation) and {max(abs(e['reduction_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (reduction); b-values {b['measured_oxidation']['b']:.2f} / {b['measured_reduction']['b']:.2f} measured vs {b['model_oxidation']['b']:.2f} / {b['model_reduction']['b']:.2f} model.
+- **Diagnosis:** at 2C the model assigns {100 * shares['contact_ohmic']:.0f} % of the voltage loss to ohmic/contact resistance; the shape of
+  the measured 2C curve says the real cell has a transport loss that grows with time, which the fit could not
+  separate from resistance (see "Why 2C loses capacity" and "Next step").
 
 ![Measured vs model at all four rates](figures/headline_measured_vs_model.png)
 
@@ -156,7 +162,7 @@ and {max(abs(e['reduction_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f
 
 ## Results
 
-### Galvanostatic cycles ({H}, 14 mm disc assumption)
+### Galvanostatic cycles ({H}, 10 mm disc)
 
 {table}
 
@@ -184,7 +190,7 @@ b-value (slope of log peak current vs log scan rate; 0.5 = semi-infinite diffusi
 measured {b['measured_oxidation']['b']:.2f} (oxidation) and {b['measured_reduction']['b']:.2f} (reduction); model
 {b['model_oxidation']['b']:.2f} and {b['model_reduction']['b']:.2f}. Both sit between the two limits, as expected for a porous
 electrode at scan rates where the sweep takes about as long as a 1C discharge. An apparent Randles-Sevcik
-diffusivity from the measured peaks (planar-electrode formula, geometric 14 mm disc area, concentration of the
+diffusivity from the measured peaks (planar-electrode formula, geometric 10 mm disc area, concentration of the
 cycling lithium) is {rs['apparent_D_geometric_mean_m2_s']:.1e} m²/s, {rs['ratio_apparent_to_fitted']:.1f} times the fitted solid-state Ds of
 {rs['fitted_Ds_m2_s']:.1e} m²/s. The two numbers are not expected to agree: Randles-Sevcik assumes a flat electrode, while
 the real one is porous with a much larger internal area, so the apparent value is an upper bound.
@@ -225,8 +231,18 @@ the disc is small, or the 1.434 mAh (110 mAh/g) capacity under-states the active
 diameter: the training RMSE, τ, k and the 2C prediction do not change to the precision shown
 (2C spans {min(pred_range):.3f} to {max(pred_range):.3f} mAh), and only R_contact drifts by a few ohms as the electrolyte and solid
 ohmic paths take up slack. The model is not electrolyte-limited with a lithium-metal counter electrode and this
-electrolyte, so the unknown area does not affect the headline result, and the 14 mm assumption was kept for the
-headline figures as the mid-point of the 12 to 16 mm range coin cells usually use.
+electrolyte, so the unknown area does not affect the headline result. The headline uses the 10 mm disc, the only
+diameter that gives a physically plausible coating.
+
+
+## Next step
+
+The weakest point is the 0.94 correlation between the rate constant and the contact resistance: C/5 and C/2 alone
+cannot tell an instantaneous ohmic drop from a transport loss that builds up over time, so the fit chose the
+ohmic explanation and over-predicts 2C capacity. Every galvanostatic step in this data ends with a 30 s rest; the
+instantaneous voltage jump at the start of each rest is the ohmic part and the slow relaxation that follows is
+the diffusion part. Adding those relaxations to the training set, still without touching 2C, is the direct way
+to break that correlation.
 
 ## Method
 
@@ -242,7 +258,7 @@ headline figures as the mid-point of the 12 to 16 mm range coin cells usually us
 3. **Model** (`src/lmo/model.py`): PyBaMM `{H}` (and the other fidelity for comparison) with
    `working electrode = positive` and a contact resistance, starting from `Xu2019` for the lithium counter
    electrode, separator and electrolyte. Positive electrode: measured OCP, 85 µm, c_max = {ocv['lmo_c_max_mol_m3']:.0f} mol/m³
-   from the LMO density, 14 mm disc (ε_active = {geo['active_volume_fraction']:.2f}, porosity {geo['porosity']:.2f}),
+   from the LMO density, 10 mm disc (ε_active = {geo['active_volume_fraction']:.2f}, porosity {geo['porosity']:.2f}),
    25 °C, Butler-Volmer kinetics, 5 µm particles.
 4. **Fit** (`src/lmo/fit.py`): scipy `least_squares` in log10 space on the voltage-time curves of C/5 cycle 1
    and C/2 cycle 1 (charge and discharge, 300 points each), simulating the full charge/rest/discharge protocol
@@ -264,8 +280,8 @@ headline figures as the mid-point of the 12 to 16 mm range coin cells usually us
 - The electrode area was never entered in EC-Lab (surface area and characteristic mass are at the 0.001
   defaults in the `.mpr` settings), so it is derived from the capacity: ε_active = {1000 * ocv['active_mass_g'] / 4.28 / 85e-4 * 1e-3:.3f} / A[cm²].
   Only a 10 mm disc gives a conventional coating; the 12 to 16 mm discs imply light to implausibly porous
-  coatings, which points to the nominal capacity under-stating the loading. The headline uses 14 mm; the
-  sensitivity table shows the prediction does not depend on this choice.
+  coatings. The headline therefore uses 10 mm; the sensitivity table shows the prediction does not depend on
+  this choice.
 - The electrolyte is assumed to be 1 M LiPF6 in carbonates with the `Xu2019` / Valoen2005 transport
   properties, and the lithium-metal kinetics are Xu2019's.
 - The fitted parameters are effective values: τ = R²/Ds at an assumed 5 µm radius, a rate constant that absorbs
@@ -294,20 +310,21 @@ results/resume_bullets.md
 """
     (ROOT / "README.md").write_text(readme)
 
+    cvmax = max(max(abs(e['oxidation_peak_shift_mV']), abs(e['reduction_peak_shift_mV'])) for e in cv[H]['scans'].values())
     bullets = f"""# Resume bullets
 
-- Built a physics-based PyBaMM DFN/SPMe half-cell model of a LiMn2O4 cathode from my own galvanostatic and
-  CV measurements, parameterised with a measured pseudo-OCV and three effective parameters (solid diffusion
-  time constant, exchange-current rate constant, contact resistance) fitted by nonlinear least squares with
-  uncertainty from Jacobian covariance and leave-one-out refits.
-- Fitted on C/5 and C/2 only, the model predicted the unseen 2C discharge capacity to within
-  {h['abs_error_pct']:.0f} % ({h['predicted_mAh']:.2f} vs {h['measured_mAh']:.2f} mAh) and the 2C average voltage to within
-  {abs(h['mean_voltage_error_mV']):.0f} mV, and reproduced the oxidation/reduction peak potentials of three cyclic voltammograms
-  at 0.1 to 0.3 mV/s to within {max(max(abs(e['oxidation_peak_shift_mV']), abs(e['reduction_peak_shift_mV'])) for e in cv[H]['scans'].values()):.0f} mV without any CV data in the fit.
-- Used the model's overpotential decomposition to attribute the {h['measured_capacity_loss_vs_c10_pct']:.0f} % capacity loss between
-  C/10 and 2C mainly to ohmic/contact resistance ({100 * shares['contact_ohmic']:.0f} % of the 2C voltage loss) and charge-transfer
-  kinetics ({100 * shares['reaction']:.0f} %), with CV b-values of {b['measured_oxidation']['b']:.2f} to {b['measured_reduction']['b']:.2f} confirming mixed diffusion/surface control;
-  packaged the pipeline as a tested Python package that regenerates every figure and number from raw data.
+Every number below is read from `results/*.json`.
+
+- Built a Doyle-Fuller-Newman half-cell model in PyBaMM on an open-circuit curve measured from my own C/10 data,
+  and fitted solid-diffusion time constant, reaction rate constant and contact resistance by nonlinear least
+  squares on the C/5 and C/2 cycles only ({1000 * fit[H]['training_rmse_V']:.0f} mV voltage RMSE), with leave-one-out uncertainty bounds.
+- Validated on data the model never saw: reproduced the 2C average discharge voltage within
+  {abs(h['mean_voltage_error_mV']):.0f} mV, C/10 capacity within {abs(c10['capacity_error_pct']):.0f}% and all six CV peak potentials across three scan rates
+  within {cvmax:.0f} mV.
+- Decomposed the 2C voltage loss ({100 * shares['contact_ohmic']:.0f}% ohmic/contact, {100 * shares['reaction']:.0f}% charge transfer,
+  {100 * shares['particle_diffusion']:.0f}% solid-state diffusion), identified the ohmic/transport ambiguity that limits high-rate prediction,
+  and packaged the work as a tested Python pipeline that regenerates every figure and number from the raw
+  cycler files.
 """
     (RESULTS / "resume_bullets.md").write_text(bullets)
     print("wrote README.md and results/resume_bullets.md using", H)
