@@ -184,14 +184,19 @@ def fig_sensitivity(kind: str = "SPMe"):
     axes[0].axhline(val["headline"]["measured_mAh"], color="k", ls="--", label="measured")
     axes[0].set_ylabel("2C discharge capacity (mAh)")
     axes[0].legend()
+    from .model import PLAUSIBLE_POROSITY
+
+    axes[1].axhspan(*PLAUSIBLE_POROSITY, color="#2ca02c", alpha=0.12, label="plausible porosity")
     axes[1].plot(d, [sens["discs"][x]["geometry"]["porosity"] for x in discs], "o-", color="grey", label="porosity")
     axes[1].plot(d, [sens["discs"][x]["geometry"]["active_volume_fraction"] for x in discs], "s-", color="k", label="active volume fraction")
     axes[1].set_ylabel("Volume fraction")
-    axes[1].legend()
-    axes[2].semilogy(d, [sens["discs"][x]["parameters"]["Ds"] for x in discs], "o-", color="#17becf", label="D$_s$ (m$^2$/s)")
-    axes[2].semilogy(d, [sens["discs"][x]["parameters"]["k"] for x in discs], "s-", color="#ff7f0e", label="k")
-    axes[2].semilogy(d, [sens["discs"][x]["parameters"]["R_contact"] for x in discs], "^-", color="#7f7f7f", label="R$_{contact}$ (Ohm)")
-    axes[2].set_ylabel("Refitted parameter")
+    axes[1].legend(fontsize=8)
+    ref = sens["discs"]["14.0"]["parameters"] if "14.0" in sens["discs"] else sens["discs"][discs[0]]["parameters"]
+    for name, marker, color, label in (("Ds", "o", "#17becf", "D$_s$"), ("k", "s", "#ff7f0e", "k"), ("R_contact", "^", "#7f7f7f", "R$_{contact}$")):
+        axes[2].plot(d, [sens["discs"][x]["parameters"][name] / ref[name] for x in discs], marker=marker, ls="-", color=color, label=label)
+    axes[2].axhline(1, color="k", lw=0.6)
+    axes[2].set_ylabel("Refitted parameter / value at 14 mm")
+    axes[2].set_ylim(0.9, 1.1)
     axes[2].legend(fontsize=8)
     for ax in axes:
         ax.set_xlabel("Assumed disc diameter (mm)")
