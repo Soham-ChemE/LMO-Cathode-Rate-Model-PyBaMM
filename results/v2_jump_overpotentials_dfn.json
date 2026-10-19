@@ -1,0 +1,323 @@
+{
+  "model": "DFN",
+  "components": [
+    "contact_ohmic",
+    "reaction",
+    "particle_diffusion",
+    "electrolyte_concentration",
+    "electrolyte_ohmic",
+    "solid_ohmic"
+  ],
+  "steps": [
+    {
+      "rate": "C/10",
+      "step": "discharge",
+      "mean_current_mA": 0.14017629666950004,
+      "capacity_mAh": 1.4268809375945728,
+      "closure_max_abs_V": 5.7970517275407474e-11,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 15.837415449791504,
+        "reaction": 0.6559387615739078,
+        "particle_diffusion": 0.0056079067945398586,
+        "electrolyte_concentration": 0.21347889497504374,
+        "electrolyte_ohmic": 0.28204021275496427,
+        "solid_ohmic": 0.013358299962519157
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 15.8374154497915,
+        "reaction": 0.7347960292404,
+        "particle_diffusion": 3.2582020538782,
+        "electrolyte_concentration": 0.2136972966795,
+        "electrolyte_ohmic": 0.2821397526164,
+        "solid_ohmic": 0.01334988846863413
+      },
+      "total_mean_mV": 17.007839525852475,
+      "total_at_cutoff_mV": 20.339600470674633,
+      "bulk_ocv_at_cutoff_V": 3.520339600507473,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9311832596796384,
+        "reaction": 0.03856684798659226,
+        "particle_diffusion": 0.0003297248181355225,
+        "electrolyte_concentration": 0.012551793815466615,
+        "electrolyte_ohmic": 0.016582953544819957,
+        "solid_ohmic": 0.0007854201553474268
+      },
+      "model_capacity_locked_out_mAh": 0.009661873002465347
+    },
+    {
+      "rate": "C/10",
+      "step": "charge",
+      "mean_current_mA": 0.14689187674150006,
+      "capacity_mAh": 1.4177814683851822,
+      "closure_max_abs_V": 6.074785119380977e-11,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 16.59615593668891,
+        "reaction": 0.689418383297341,
+        "particle_diffusion": 0.0038074462081138655,
+        "electrolyte_concentration": 0.22405856318609957,
+        "electrolyte_ohmic": 0.29562032968010754,
+        "solid_ohmic": 0.013996132678205932
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 16.596155936688902,
+        "reaction": 0.6884075210801001,
+        "particle_diffusion": 0.0520816462730167,
+        "electrolyte_concentration": 0.2242164501834,
+        "electrolyte_ohmic": 0.2956477038576,
+        "solid_ohmic": 0.013993074309068276
+      },
+      "total_mean_mV": 17.82305679173877,
+      "total_at_cutoff_mV": 17.87050233239209,
+      "bulk_ocv_at_cutoff_V": 4.482129497606861,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9311621530814765,
+        "reaction": 0.03868126502390408,
+        "particle_diffusion": 0.00021362475879438753,
+        "electrolyte_concentration": 0.012571275836923426,
+        "electrolyte_ohmic": 0.01658639890645086,
+        "solid_ohmic": 0.0007852823924509588
+      }
+    },
+    {
+      "rate": "C/5",
+      "step": "discharge",
+      "mean_current_mA": 0.2863833969045,
+      "capacity_mAh": 1.4246075301045829,
+      "closure_max_abs_V": 1.1843370728570335e-10,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 32.356203883692,
+        "reaction": 1.337603291836192,
+        "particle_diffusion": 0.010437816845379857,
+        "electrolyte_concentration": 0.43578189656503785,
+        "electrolyte_ohmic": 0.5762291742957921,
+        "solid_ohmic": 0.027288473984865228
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 32.356203883692004,
+        "reaction": 1.4988202820752001,
+        "particle_diffusion": 5.7843416848414995,
+        "electrolyte_concentration": 0.43657587089169997,
+        "electrolyte_ohmic": 0.5765070868373,
+        "solid_ohmic": 0.027264209442438334
+      },
+      "total_mean_mV": 34.74354453721927,
+      "total_at_cutoff_mV": 40.679713017780145,
+      "bulk_ocv_at_cutoff_V": 3.5406797131236583,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9312867847732168,
+        "reaction": 0.03849933303158735,
+        "particle_diffusion": 0.00030042463958155653,
+        "electrolyte_concentration": 0.01254281629492936,
+        "electrolyte_ohmic": 0.016585215526254166,
+        "solid_ohmic": 0.0007854257344305286
+      },
+      "model_capacity_locked_out_mAh": 0.009661873002465347
+    },
+    {
+      "rate": "C/5",
+      "step": "charge",
+      "mean_current_mA": 0.28714461777340006,
+      "capacity_mAh": 1.4134185739574694,
+      "closure_max_abs_V": 1.1874856653548704e-10,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 32.4422082327465,
+        "reaction": 1.3497849418980572,
+        "particle_diffusion": 0.007293611804626202,
+        "electrolyte_concentration": 0.4383302954873252,
+        "electrolyte_ohmic": 0.5779271459917028,
+        "solid_ohmic": 0.02735911694248234
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 32.4422082327465,
+        "reaction": 1.3478844732938,
+        "particle_diffusion": 0.1018093353106,
+        "electrolyte_concentration": 0.438642890096,
+        "electrolyte_ohmic": 0.5779729298258,
+        "solid_ohmic": 0.027353701852747728
+      },
+      "total_mean_mV": 34.8429033448707,
+      "total_at_cutoff_mV": 34.93587156312546,
+      "bulk_ocv_at_cutoff_V": 4.465064128318128,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9310994526385354,
+        "reaction": 0.03873916385606718,
+        "particle_diffusion": 0.00020932847450842268,
+        "electrolyte_concentration": 0.012580188601069974,
+        "electrolyte_ohmic": 0.01658665296262634,
+        "solid_ohmic": 0.0007852134671925937
+      }
+    },
+    {
+      "rate": "C/2",
+      "step": "discharge",
+      "mean_current_mA": 0.7165586190805,
+      "capacity_mAh": 1.4188908805524016,
+      "closure_max_abs_V": 2.9632962750270053e-10,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 80.9583133107131,
+        "reaction": 3.3276165236451782,
+        "particle_diffusion": 0.022711707613910854,
+        "electrolyte_concentration": 1.0876247258888883,
+        "electrolyte_ohmic": 1.4417638503728378,
+        "solid_ohmic": 0.06827268914078843
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 80.9583133107131,
+        "reaction": 3.7310510040066998,
+        "particle_diffusion": 8.416929063049102,
+        "electrolyte_concentration": 1.0917054218318,
+        "electrolyte_ohmic": 1.4440127809047,
+        "solid_ohmic": 0.06807421229459681
+      },
+      "total_mean_mV": 86.9063028073747,
+      "total_at_cutoff_mV": 95.71008579279999,
+      "bulk_ocv_at_cutoff_V": 3.5957100860817706,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9315585946643576,
+        "reaction": 0.03828970300371359,
+        "particle_diffusion": 0.0002613355634774925,
+        "electrolyte_concentration": 0.01251491193106646,
+        "electrolyte_ohmic": 0.016589865220345015,
+        "solid_ohmic": 0.0007855896170397775
+      },
+      "model_capacity_locked_out_mAh": 0.009661873002465347
+    },
+    {
+      "rate": "C/2",
+      "step": "charge",
+      "mean_current_mA": 0.7172696946904001,
+      "capacity_mAh": 1.395957345980751,
+      "closure_max_abs_V": 2.966240586488311e-10,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 81.03865214200108,
+        "reaction": 3.3865783530738987,
+        "particle_diffusion": 0.015283171731611247,
+        "electrolyte_concentration": 1.097363485148432,
+        "electrolyte_ohmic": 1.444001865365543,
+        "solid_ohmic": 0.06834126981072801
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 81.0386521420011,
+        "reaction": 3.3827117271975,
+        "particle_diffusion": 0.40490729681590004,
+        "electrolyte_concentration": 1.0989852899700001,
+        "electrolyte_ohmic": 1.4441612979711,
+        "solid_ohmic": 0.06832715701717086
+      },
+      "total_mean_mV": 87.0502202871313,
+      "total_at_cutoff_mV": 87.43774491097278,
+      "bulk_ocv_at_cutoff_V": 4.412562254792406,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9309413792946035,
+        "reaction": 0.03890373099463069,
+        "particle_diffusion": 0.00017556729530609323,
+        "electrolyte_concentration": 0.012606096590322542,
+        "electrolyte_ohmic": 0.016588147170708667,
+        "solid_ohmic": 0.0007850786544285282
+      }
+    },
+    {
+      "rate": "2C",
+      "step": "discharge",
+      "mean_current_mA": 2.8638540306153,
+      "capacity_mAh": 1.2118065334161676,
+      "closure_max_abs_V": 1.1843286351620463e-09,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 323.5643054356239,
+        "reaction": 12.842219029871703,
+        "particle_diffusion": 0.05914552202544596,
+        "electrolyte_concentration": 4.292773882300975,
+        "electrolyte_ohmic": 5.76960942703994,
+        "solid_ohmic": 0.2730334506142112
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 323.56430543562396,
+        "reaction": 13.2943161869942,
+        "particle_diffusion": 0.9642631750352,
+        "electrolyte_concentration": 4.3905225514212,
+        "electrolyte_ohmic": 5.7834164973929,
+        "solid_ohmic": 0.2716304941971
+      },
+      "total_mean_mV": 346.80108674747623,
+      "total_at_cutoff_mV": 348.26845434066456,
+      "bulk_ocv_at_cutoff_V": 3.848268455524991,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9329968036438934,
+        "reaction": 0.037030503999610546,
+        "particle_diffusion": 0.00017054595353247225,
+        "electrolyte_concentration": 0.012378201932875617,
+        "electrolyte_ohmic": 0.016636653250285488,
+        "solid_ohmic": 0.000787291219802379
+      },
+      "model_capacity_locked_out_mAh": 0.01675548525148056
+    },
+    {
+      "rate": "2C",
+      "step": "charge",
+      "mean_current_mA": 2.8708403357677006,
+      "capacity_mAh": 1.2118065507383429,
+      "closure_max_abs_V": 1.187217435472121e-09,
+      "capacity_weighted_mean_mV": {
+        "contact_ohmic": 324.35363301658873,
+        "reaction": 13.78099055336904,
+        "particle_diffusion": 0.037976975061386316,
+        "electrolyte_concentration": 4.43560177227138,
+        "electrolyte_ohmic": 5.786151741266047,
+        "solid_ohmic": 0.2746001028174552
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 324.35363301658873,
+        "reaction": 13.7613113418493,
+        "particle_diffusion": 0.1275005793521,
+        "electrolyte_concentration": 4.5535882309836,
+        "electrolyte_ohmic": 5.918483527473501,
+        "solid_ohmic": 0.2621908340998
+      },
+      "total_mean_mV": 348.668954161374,
+      "total_at_cutoff_mV": 348.976707530347,
+      "bulk_ocv_at_cutoff_V": 4.151023291282437,
+      "share_of_mean_loss": {
+        "contact_ohmic": 0.9302624427710549,
+        "reaction": 0.03952457019442804,
+        "particle_diffusion": 0.00010891986398023117,
+        "electrolyte_concentration": 0.01272152773951436,
+        "electrolyte_ohmic": 0.016594972601397858,
+        "solid_ohmic": 0.0007875668296247633
+      }
+    }
+  ],
+  "version": "v2_jump",
+  "discharge_mean_loss_mV": {
+    "C/10": 17.007839525852475,
+    "C/5": 34.74354453721927,
+    "C/2": 86.9063028073747,
+    "2C": 346.80108674747623
+  },
+  "discharge_dominant_term": {
+    "C/10": "contact_ohmic",
+    "C/5": "contact_ohmic",
+    "C/2": "contact_ohmic",
+    "2C": "contact_ohmic"
+  },
+  "two_c": {
+    "mean_loss_mV": 346.80108674747623,
+    "shares": {
+      "contact_ohmic": 0.9329968036438934,
+      "reaction": 0.037030503999610546,
+      "particle_diffusion": 0.00017054595353247225,
+      "electrolyte_concentration": 0.012378201932875617,
+      "electrolyte_ohmic": 0.016636653250285488,
+      "solid_ohmic": 0.000787291219802379
+    },
+    "at_cutoff_mV": {
+      "contact_ohmic": 323.56430543562396,
+      "reaction": 13.2943161869942,
+      "particle_diffusion": 0.9642631750352,
+      "electrolyte_concentration": 4.3905225514212,
+      "electrolyte_ohmic": 5.7834164973929,
+      "solid_ohmic": 0.2716304941971
+    },
+    "bulk_ocv_at_cutoff_V": 3.848268455524991,
+    "capacity_locked_out_mAh": 0.01675548525148056
+  }
+}

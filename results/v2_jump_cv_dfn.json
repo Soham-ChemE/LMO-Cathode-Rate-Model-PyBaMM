@@ -1,0 +1,113 @@
+{
+  "model": "DFN",
+  "disc_mm": 10.0,
+  "scans": {
+    "0.1 mV/s": {
+      "scan_rate_V_s": 0.0001,
+      "measured": {
+        "oxidation_peak_V": 4.3547416,
+        "oxidation_peak_mA": 1.618320446789776,
+        "reduction_peak_V": 3.8062489,
+        "reduction_peak_mA": -1.283918521290925
+      },
+      "model": {
+        "oxidation_peak_V": 4.3607625527782945,
+        "oxidation_peak_mA": 1.685698377487791,
+        "reduction_peak_V": 3.7732565615582248,
+        "reduction_peak_mA": -1.5624698457009645
+      },
+      "oxidation_peak_shift_mV": 6.020952778294841,
+      "reduction_peak_shift_mV": -32.99233844177518,
+      "oxidation_peak_current_error_pct": 4.163448026110705,
+      "reduction_peak_current_error_pct": 21.695405104832368,
+      "peak_separation_measured_mV": 548.4926999999997,
+      "peak_separation_model_mV": 587.5059912200697
+    },
+    "0.2 mV/s": {
+      "scan_rate_V_s": 0.0002,
+      "measured": {
+        "oxidation_peak_V": 4.4166608,
+        "oxidation_peak_mA": 2.421871452862908,
+        "reduction_peak_V": 3.72328,
+        "reduction_peak_mA": -2.056479521418716
+      },
+      "model": {
+        "oxidation_peak_V": 4.4926752619719155,
+        "oxidation_peak_mA": 2.730873373621317,
+        "reduction_peak_V": 3.636299501476583,
+        "reduction_peak_mA": -2.6107119426356267
+      },
+      "oxidation_peak_shift_mV": 76.01446197191564,
+      "reduction_peak_shift_mV": -86.98049852341683,
+      "oxidation_peak_current_error_pct": 12.758807673014028,
+      "reduction_peak_current_error_pct": 26.95054414325306,
+      "peak_separation_measured_mV": 693.3807999999999,
+      "peak_separation_model_mV": 856.3757604953323
+    },
+    "0.3 mV/s": {
+      "scan_rate_V_s": 0.0003,
+      "measured": {
+        "oxidation_peak_V": 4.4930315,
+        "oxidation_peak_mA": 3.124308136805983,
+        "reduction_peak_V": 3.6368725,
+        "reduction_peak_mA": -2.73406566786722
+      },
+      "model": {
+        "oxidation_peak_V": 4.598000449875027,
+        "oxidation_peak_mA": 3.564583212380699,
+        "reduction_peak_V": 3.528921603222536,
+        "reduction_peak_mA": -3.448367763522704
+      },
+      "oxidation_peak_shift_mV": 104.96894987502702,
+      "reduction_peak_shift_mV": -107.95089677746405,
+      "oxidation_peak_current_error_pct": 14.091922316753758,
+      "reduction_peak_current_error_pct": 26.126003630801375,
+      "peak_separation_measured_mV": 856.1589999999999,
+      "peak_separation_model_mV": 1069.078846652491
+    }
+  },
+  "b_value": {
+    "measured_oxidation": {
+      "b": 0.5969302326070194,
+      "log10_intercept": 2.5955434178878236,
+      "r2": 0.9995813187730955
+    },
+    "measured_reduction": {
+      "b": 0.6871204976045844,
+      "log10_intercept": 2.856411030427321,
+      "r2": 0.9999241493393887
+    },
+    "model_oxidation": {
+      "b": 0.6831954368416123,
+      "log10_intercept": 2.9606020159785125,
+      "r2": 0.9997756847270571
+    },
+    "model_reduction": {
+      "b": 0.722733471973004,
+      "log10_intercept": 3.0861966285715576,
+      "r2": 0.999610136737617
+    }
+  },
+  "randles_sevcik": {
+    "assumptions": "reversible planar electrode, geometric disc area, C = cycling lithium concentration",
+    "area_m2": 7.853981633974483e-05,
+    "concentration_mol_m3": 17417.756723088918,
+    "per_scan": {
+      "0.1 mV/s": {
+        "oxidation_m2_s": 1.9390820039005524e-13,
+        "reduction_m2_s": 1.2205120202867008e-13
+      },
+      "0.2 mV/s": {
+        "oxidation_m2_s": 2.1713974015334032e-13,
+        "reduction_m2_s": 1.5656183966765556e-13
+      },
+      "0.3 mV/s": {
+        "oxidation_m2_s": 2.409093180565162e-13,
+        "reduction_m2_s": 1.8448614727058764e-13
+      }
+    },
+    "apparent_D_geometric_mean_m2_s": 1.8150843169677578e-13,
+    "fitted_Ds_m2_s": 9.999998875572103e-12,
+    "ratio_apparent_to_fitted": 0.018150845210609248
+  }
+}
