@@ -21,6 +21,8 @@ from .plotting import COLORS, MEASURED_STYLE, MODEL_STYLE, savefig
 from .validate import load_fit, load_fit_all
 
 TRAINED_RATES = [r for r, _ in REST_TRAINING]
+# Every version with its result-file prefix, in order.
+VERSIONS = (("v1", ""), ("v2", "v2_"), ("v2.1", "v2_1_"), ("v3", "v3_"))
 
 
 # ----------------------------------------------------------------- 2. model-free check
@@ -134,7 +136,7 @@ def comparison(kinds=("SPMe", "DFN"), save: bool = True) -> dict:
     for kind in kinds:
         k = kind.lower()
         versions = {}
-        for ver, pre in (("v1", ""), ("v2", "v2_"), ("v2.1", "v2_1_")):
+        for ver, pre in VERSIONS:
             fj, vj = _load(f"{pre}fit_{k}.json"), _load(f"{pre}validation_{k}.json")
             if fj and vj:
                 versions[ver] = (fj, vj, _load(f"{pre}overpotentials_{k}.json"), _load(f"{pre}cv_{k}.json"))
@@ -165,6 +167,15 @@ def comparison(kinds=("SPMe", "DFN"), save: bool = True) -> dict:
                 "c10": {"capacity_error_pct": c10["capacity_error_pct"], "vq_rmse_mV": c10["vq_rmse_mV"]},
                 "rates": {r: {"capacity_error_pct": x["discharge"]["capacity_error_pct"], "vq_rmse_mV": x["discharge"]["vq_rmse_mV"]} for r, x in vj["rates"].items()},
             }
+            e["coulombic_efficiency"] = {
+                r: {"model": x["discharge"]["capacity_mAh_model"] / x["charge"]["capacity_mAh_model"], "measured": x["discharge"]["capacity_mAh_measured"] / x["charge"]["capacity_mAh_measured"]}
+                for r, x in vj["rates"].items()
+            }
+            if "training_rmse_per_block_mV" in fj and all(rest_key(r, a) in fj["training_rmse_per_block_mV"] for r in TRAINED_RATES for a in REST_KINDS):
+                from .fit_v3 import rest_rmse_split
+
+                n = {rest_key(r, a): len(get_rest(r, 1, a).time_s) for r in TRAINED_RATES for a in REST_KINDS}
+                e.update(rest_rmse_split(fj["training_rmse_per_block_mV"], n))
             if oj:
                 e["two_c_shares"] = oj["two_c"]["shares"]
                 e["two_c_mean_loss_mV"] = oj["two_c"]["mean_loss_mV"]
@@ -172,13 +183,16 @@ def comparison(kinds=("SPMe", "DFN"), save: bool = True) -> dict:
                 e["cv_max_peak_shift_mV"] = max(max(abs(x["oxidation_peak_shift_mV"]), abs(x["reduction_peak_shift_mV"])) for x in cj["scans"].values())
                 e["b_value_model"] = {"oxidation": cj["b_value"]["model_oxidation"]["b"], "reduction": cj["b_value"]["model_reduction"]["b"]}
             entry[ver] = e
+        if "v3" in entry:
+            entry["v3"]["cv_leak_check"] = cv_leak_check(kind)
         entry["measured_2c_capacity_mAh"] = v1v["headline"]["measured_mAh"]
         entry["two_c_abs_error_change_pct_points"] = abs(entry["v2"]["two_c"]["capacity_error_pct"]) - abs(entry["v1"]["two_c"]["capacity_error_pct"])
         entry["two_c_improved"] = bool(entry["two_c_abs_error_change_pct_points"] < 0)
-        if "v2.1" in entry:
-            e21, e1 = entry["v2.1"]["two_c"], entry["v1"]["two_c"]
-            entry["v2_1_two_c_abs_error_change_pct_points"] = abs(e21["capacity_error_pct"]) - abs(e1["capacity_error_pct"])
-            entry["v2_1_two_c_improved"] = bool(abs(e21["capacity_error_pct"]) < abs(e1["capacity_error_pct"]) and e21["vq_rmse_mV"] < e1["vq_rmse_mV"])
+        for ver, tag in (("v2.1", "v2_1"), ("v3", "v3")):
+            if ver in entry:
+                ev, e1 = entry[ver]["two_c"], entry["v1"]["two_c"]
+                entry[f"{tag}_two_c_abs_error_change_pct_points"] = abs(ev["capacity_error_pct"]) - abs(e1["capacity_error_pct"])
+                entry[f"{tag}_two_c_improved"] = bool(abs(ev["capacity_error_pct"]) < abs(e1["capacity_error_pct"]) and ev["vq_rmse_mV"] < e1["vq_rmse_mV"])
         out["models"][kind] = entry
     out["rests_measured"] = _load("v2_rests_measured.json") and {
         k: v for k, v in _load("v2_rests_measured.json").items() if k.startswith("after_") or k == "v1_R_contact_ohm"
@@ -186,6 +200,38 @@ def comparison(kinds=("SPMe", "DFN"), save: bool = True) -> dict:
     if save:
         with open(RESULTS_DIR / "v2_comparison.json", "w") as f:
             json.dump(out, f, indent=2)
+    return out
+
+
+def cv_leak_check(kind: str, scan: str = "0.3 mV/s", volts=(4.6, 4.65, 4.7, 4.75, 4.79)) -> dict:
+    """Post-hoc, never fitted: on the positive-going 0.3 mV/s sweep above the LMO oxidation
+    peak (4.6 to 4.8 V, outside the galvanostatic window), the measured current against the
+    v2.1 model (intercalation only) and the v3 model (intercalation plus the fitted leak). The
+    excess of the measured over the v2.1 current is a model-free upper bound on the parasitic
+    current at that potential."""
+    from .io import cv_cycle
+
+    m = cv_cycle(scan, 2)
+    v, i = m["voltage_V"].to_numpy(), m["current_mA"].to_numpy()
+    it = int(np.argmax(v))
+    out = {"scan": scan, "cycle": 2, "note": "positive-going sweep above the LMO peak; measured minus v2.1 is an upper bound on the leak", "points": []}
+    models = {}
+    for ver, pre in (("v2.1", "v2_1_"), ("v3", "v3_")):
+        p = PROCESSED_DIR / f"{pre}model_cv_{kind.lower()}.csv"
+        if p.exists():
+            df = pd.read_csv(p)
+            df = df[(df["scan"] == scan) & (df["cycle"] == 2)]
+            models[ver] = (df["voltage_V"].to_numpy(), df["current_mA"].to_numpy())
+    for V in volts:
+        k = int(np.argmin(abs(v[: it + 1] - V)))
+        row = {"voltage_V": V, "measured_mA": float(i[k])}
+        for ver, (vm, im) in models.items():
+            itm = int(np.argmax(vm))
+            km = int(np.argmin(abs(vm[: itm + 1] - V)))
+            row[f"{ver}_mA"] = float(im[km])
+        if "v2.1_mA" in row:
+            row["measured_minus_v2.1_mA"] = row["measured_mA"] - row["v2.1_mA"]
+        out["points"].append(row)
     return out
 
 
@@ -264,9 +310,8 @@ def fig_fit_rests(kind: str, prefix: str = "v2_"):
 
 def fig_comparison(kind: str = "DFN"):
     comp = json.load(open(RESULTS_DIR / "v2_comparison.json"))["models"][kind]
-    versions = [("v1", "", "#7f7f7f", ":"), ("v2", "v2_", "k", "--")]
-    if "v2.1" in comp:
-        versions.append(("v2.1", "v2_1_", "#d62728", "-."))
+    styles = {"v1": ("#7f7f7f", ":", "dotted"), "v2": ("k", "--", "dashed"), "v2.1": ("#d62728", "-.", "dash-dot"), "v3": ("#1f77b4", (0, (1, 1)), "densely dotted")}
+    versions = [(ver, pre, styles[ver][0], styles[ver][1]) for ver, pre in VERSIONS if ver in comp]
     curves = {ver: pd.read_csv(PROCESSED_DIR / f"{pre}model_gcd_{kind.lower()}.csv") for ver, pre, _, _ in versions}
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.3))
     ax = axes[0]
@@ -291,7 +336,7 @@ def fig_comparison(kind: str = "DFN"):
             s = curves[ver][(curves[ver]["rate"] == rate) & (curves[ver]["step"] == "discharge")]
             ax.plot(s["capacity_mAh"], s["voltage_V"], color=COLORS[rate], ls=ls, lw=1.3, label=f"{rate} {ver}")
     ax.set_xlabel("Discharge capacity (mAh)")
-    ax.set_title("C/10, C/5, C/2 discharges (v1 dotted, v2 dashed" + (", v2.1 dash-dot)" if "v2.1" in comp else ")"))
+    ax.set_title("C/10, C/5, C/2 discharges (" + ", ".join(f"{ver} {styles[ver][2]}" for ver, *_ in versions) + ")", fontsize=9)
     ax.set_ylim(3.4, 4.6)
     ax.legend(fontsize=6, ncol=3)
     ax = axes[2]
@@ -352,6 +397,66 @@ def fig_weighting(kind: str):
     return savefig(fig, f"v2_weighting_sensitivity_{kind.lower()}")
 
 
+def fig_v3_side_reaction(kind: str = "DFN"):
+    """Left: the three after-charge training rests, measured vs v2.1 vs v3. Middle: the
+    after-discharge rests. Right: the fitted parasitic current against potential, with its
+    leave-one-out spread and the model-free check from the 0.3 mV/s CV above the LMO peak
+    (measured current minus the v2.1 intercalation current, never fitted)."""
+    from .io import cv_cycle
+
+    f3 = json.load(open(RESULTS_DIR / f"v3_fit_{kind.lower()}.json"))
+    traces = {ver: pd.read_csv(PROCESSED_DIR / f"{pre}model_rests_{kind.lower()}.csv") for ver, pre in (("v2.1", "v2_1_"), ("v3", "v3_"))}
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.3))
+    for ax, after in zip(axes[:2], REST_KINDS):
+        for rate in TRAINED_RATES:
+            r = get_rest(rate, 1, after)
+            ax.plot(_logt(np.r_[0.0, r.time_s]), 1000 * (np.r_[r.v_before_V, r.voltage_V] - r.v_before_V), marker="o", ms=3, color=COLORS[rate], label=f"{rate} measured", **MEASURED_STYLE)
+            for ver, ls in (("v2.1", "--"), ("v3", (0, (1, 1)))):
+                m = traces[ver][(traces[ver]["rate"] == rate) & (traces[ver]["after"] == after) & (traces[ver]["source"] == "model")]
+                ax.plot(_logt(m["time_s"]), 1000 * (m["voltage_V"] - r.v_before_V), color=COLORS[rate], ls=ls, lw=1.5, label=f"{rate} {ver}")
+        ax.set_xscale("log")
+        ax.set_xlabel("Time after switch-off (s)")
+        ax.set_ylabel("V(rest) - V(last sample under current) (mV)")
+        ax.set_title(f"Rests after {after} (cycle 1, training): v2.1 dashed, v3 dotted", fontsize=9)
+        ax.legend(fontsize=6.5, ncol=3)
+    ax = axes[2]
+    lk = f3["leakage_current"]
+    volts = np.array([float(v) for v in lk["current_mA_vs_surface_potential_V"]])
+    cur = np.array(list(lk["current_mA_vs_surface_potential_V"].values()))
+    ax.semilogy(volts, cur, color="#1f77b4", lw=2, label=f"v3 {kind} fit: {lk['tafel_slope_mV_per_decade']:.0f} mV/decade, {1000 * lk['current_at_reference_potential_mA']:.0f} µA at 4.5 V")
+    from .fit_v3 import leakage_current_table
+
+    for d in f3.get("leave_one_step_out", []):
+        t = leakage_current_table({"j_ref": d["j_ref"], "alpha_ox": d["alpha_ox"]}, f3["disc_mm"])
+        ax.semilogy(volts, list(t["current_mA_vs_surface_potential_V"].values()), color="#1f77b4", lw=0.6, alpha=0.4)
+    for rate in TRAINED_RATES:
+        i = abs(get_step(rate, 1, "charge").mean_current_mA)
+        ax.axhline(i, color=COLORS[rate], lw=0.8, ls=":")
+        ax.text(3.52, i * 1.1, f"{rate} current", color=COLORS[rate], fontsize=7)
+    cvp = PROCESSED_DIR / f"v2_1_model_cv_{kind.lower()}.csv"
+    if cvp.exists():
+        m = cv_cycle("0.3 mV/s", 2)
+        mod = pd.read_csv(cvp)
+        mod = mod[(mod["scan"] == "0.3 mV/s") & (mod["cycle"] == 2)]
+        v, i = m["voltage_V"].to_numpy(), m["current_mA"].to_numpy()
+        vm, im = mod["voltage_V"].to_numpy(), mod["current_mA"].to_numpy()
+        it, itm = int(np.argmax(v)), int(np.argmax(vm))
+        pts = []
+        for V in (4.65, 4.70, 4.75, 4.79):
+            k, km = int(np.argmin(abs(v[: it + 1] - V))), int(np.argmin(abs(vm[: itm + 1] - V)))
+            pts.append((V, i[k] - im[km]))
+        pts = np.array(pts)
+        ok = pts[:, 1] > 0
+        ax.semilogy(pts[ok, 0], pts[ok, 1], marker="s", ls="none", color="#2ca02c", label="0.3 mV/s CV: measured minus v2.1 current above the LMO peak (not fitted)")
+    ax.set_xlabel("Positive particle surface potential (V vs Li/Li$^+$)")
+    ax.set_ylabel("Parasitic oxidation current (mA)")
+    ax.set_ylim(1e-4, 10)
+    ax.set_title("Fitted side-reaction current (thin lines: leave-one-out refits)", fontsize=9)
+    ax.legend(fontsize=6.5, loc="upper left")
+    fig.tight_layout()
+    return savefig(fig, "v3_side_reaction")
+
+
 def make_figures(headline_kind: str = "DFN", kinds=("SPMe", "DFN")):
     from .figures import fig_cv, fig_headline, fig_overpotentials
 
@@ -367,10 +472,15 @@ def make_figures(headline_kind: str = "DFN", kinds=("SPMe", "DFN")):
             paths.append(fig_fit_rests(kind, "v2_1_"))
         if (RESULTS_DIR / f"v2_1_validation_{kind.lower()}.json").exists():
             paths += [fig_overpotentials(kind, "v2_1_"), fig_cv(kind, "v2_1_")]
-    if (RESULTS_DIR / f"v2_validation_{headline_kind.lower()}.json").exists():
-        paths.append(fig_headline(headline_kind, "v2_"))
-    if (RESULTS_DIR / f"v2_1_validation_{headline_kind.lower()}.json").exists():
-        paths.append(fig_headline(headline_kind, "v2_1_"))
+        if (RESULTS_DIR / f"v3_fit_{kind.lower()}.json").exists():
+            paths.append(fig_fit_rests(kind, "v3_"))
+        if (RESULTS_DIR / f"v3_validation_{kind.lower()}.json").exists():
+            paths += [fig_overpotentials(kind, "v3_"), fig_cv(kind, "v3_")]
+    for pre in ("v2_", "v2_1_", "v3_"):
+        if (RESULTS_DIR / f"{pre}validation_{headline_kind.lower()}.json").exists():
+            paths.append(fig_headline(headline_kind, pre))
+    if (RESULTS_DIR / f"v3_fit_{headline_kind.lower()}.json").exists() and (RESULTS_DIR / f"v2_1_fit_{headline_kind.lower()}.json").exists():
+        paths.append(fig_v3_side_reaction(headline_kind))
     if (RESULTS_DIR / "v2_comparison.json").exists() and headline_kind in json.load(open(RESULTS_DIR / "v2_comparison.json"))["models"]:
         paths.append(fig_comparison(headline_kind))
     return paths

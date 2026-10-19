@@ -1,10 +1,12 @@
 """Regenerate everything from data/raw: processed tables, results/*.json and figures/*.png.
 
-Usage: python scripts/run_all.py [--fast] [--v1-only | --v2-only]
+Usage: python scripts/run_all.py [--fast] [--v1-only | --v2-only | --v3-only]
   --fast     skip the DFN (SPMe only, a few minutes)
   --v1-only  the v1 pipeline alone (fit on C/5 and C/2 curves; results/*.json, figures/*.png)
   --v2-only  the v2 pipeline alone (fit on curves plus rests; results/v2_*.json, figures/v2_*.png),
              which needs the v1 result files for the comparison
+  --v3-only  the v3 pipeline alone (side reaction; results/v3_*.json, figures/v3_*.png), which
+             needs the v1 and v2.1 result files (its starting point and the comparison)
 """
 
 from __future__ import annotations
@@ -13,12 +15,12 @@ import json
 import sys
 import time
 
-from lmo import RESULTS_DIR, diagnostics, figures, fit, fit_v2, fit_v21, ocv, relaxation, validate
+from lmo import RESULTS_DIR, diagnostics, figures, fit, fit_v2, fit_v21, fit_v3, ocv, relaxation, validate
 from lmo.io import cv_peaks, gcd_summary
 from lmo import CVS
 
 
-def main(fast: bool = False, v1: bool = True, v2: bool = True):
+def main(fast: bool = False, v1: bool = True, v2: bool = True, v3: bool = True):
     t0 = time.time()
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     kinds = ["SPMe"] if fast else ["SPMe", "DFN"]
@@ -27,6 +29,8 @@ def main(fast: bool = False, v1: bool = True, v2: bool = True):
         run_v1(kinds, headline)
     if v2:
         run_v2(kinds, headline)
+    if v3:
+        run_v3(kinds, headline)
     write_summary(kinds)
     import importlib.util
 
@@ -104,10 +108,30 @@ def run_v2(kinds, headline):
         print("   ", p)
 
 
+def run_v3(kinds, headline):
+    """v3: the v2.1 double-layer model plus a parasitic oxidation reaction, fitted to the v2.1
+    data plus the measured excess charge (never 2C); blind validation, CVs, overpotentials,
+    post-hoc 2C rests, comparison and figures. The SPMe runs three starts with leave-one-out;
+    the DFN runs once from the SPMe optimum, with leave-one-out."""
+    for kind in kinds:
+        print(f"v3-1. {kind} fit: double layer plus oxidation side reaction, with LOO ({'3 starts' if kind == 'SPMe' else 'from the SPMe optimum'})")
+        fit_v3.run(kind)
+        kw = fit_v3.sim_kwargs()
+        print(f"v3-2. {kind} blind validation, CVs, overpotentials, post-hoc 2C rests")
+        validate.predict_all(kind, prefix="v3_", mesh="v2", sim_kwargs=kw)
+        validate.validate_cv(kind, prefix="v3_", mesh="v2", sim_kwargs=kw)
+        diagnostics.run(kind, prefix="v3_")
+        relaxation.posthoc_2c_rests(kind, prefix="v3_", sim_kwargs=kw)
+    print("v3-3. v1 vs v2 vs v2.1 vs v3 comparison and figures")
+    relaxation.comparison(kinds)
+    for p in relaxation.make_figures(headline, kinds):
+        print("   ", p)
+
+
 def write_summary(kinds):
     """results/summary.json (v1) and results/v2_summary.json: the numbers the README quotes."""
     _write_summary(kinds, "")
-    for prefix in ("v2_", "v2_1_"):
+    for prefix in ("v2_", "v2_1_", "v3_"):
         if all((RESULTS_DIR / f"{prefix}validation_{k.lower()}.json").exists() for k in kinds):
             _write_summary(kinds, prefix)
 
@@ -138,4 +162,10 @@ def _write_summary(kinds, prefix):
 
 
 if __name__ == "__main__":
-    main(fast="--fast" in sys.argv, v1="--v2-only" not in sys.argv, v2="--v1-only" not in sys.argv)
+    only = {f for f in ("--v1-only", "--v2-only", "--v3-only") if f in sys.argv}
+    main(
+        fast="--fast" in sys.argv,
+        v1=not only or "--v1-only" in only,
+        v2=not only or "--v2-only" in only,
+        v3=not only or "--v3-only" in only,
+    )

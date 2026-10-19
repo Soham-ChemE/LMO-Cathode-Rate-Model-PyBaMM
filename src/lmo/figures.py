@@ -24,6 +24,11 @@ COMPONENT_LABELS = {
 COMPONENT_COLORS = ["#7f7f7f", "#ff7f0e", "#17becf", "#bcbd22", "#8c564b", "#e377c2"]
 
 
+def version_label(prefix: str) -> str:
+    """"v2_" -> "v2", "v2_1_" -> "v2.1", "v3_" -> "v3"."""
+    return prefix.rstrip("_").replace("v2_1", "v2.1") or "v1"
+
+
 def _model_frames(kind, prefix=""):
     return pd.read_csv(PROCESSED_DIR / f"{prefix}model_gcd_{kind.lower()}.csv")
 
@@ -48,7 +53,12 @@ def fig_headline(kind: str = "DFN", prefix: str = ""):
     axes[0].set_ylim(3.4, 4.6)
     axes[0].legend(fontsize=7.5, ncol=2, loc="lower left")
     h = val["headline"]
-    trained = {"": "C/5 and C/2 only", "v2_": "C/5 and C/2 curves plus the C/10, C/5, C/2 rests (v2)", "v2_1_": "curves plus rests with the v2.1 model"}.get(prefix, prefix)
+    trained = {
+        "": "C/5 and C/2 only",
+        "v2_": "C/5 and C/2 curves plus the C/10, C/5, C/2 rests (v2)",
+        "v2_1_": "curves plus rests with the v2.1 model",
+        "v3_": "curves, rests and excess charge with the v3 side-reaction model",
+    }.get(prefix, prefix)
     fig.suptitle(
         f"LiMn$_2$O$_4$ half cell: measured vs {kind} fitted on {trained}. "
         f"2C prediction: {h['predicted_mAh']:.3f} mAh vs {h['measured_mAh']:.3f} measured ({h['error_pct']:+.1f}%)",
@@ -120,7 +130,7 @@ def fig_overpotentials(kind: str, prefix: str = ""):
     for xi, rate in zip(x, [s["rate"] for s in dis]):
         ax.get_xticklabels()[xi].set_color(COLORS[rate])
     ax.set_ylabel("Capacity-weighted mean voltage loss on discharge (mV)")
-    ax.set_title(f"Overpotential breakdown ({kind}{', v2' if prefix else ''})")
+    ax.set_title(f"Overpotential breakdown ({kind}{', ' + version_label(prefix) if prefix else ''})")
     ax.legend(fontsize=8)
     ax = axes[1]
     sel = bd[(bd["rate"] == "2C") & (bd["step"] == "discharge")]
