@@ -45,6 +45,12 @@ the diffusion part. Adding those relaxations to the training set, still without 
 to break that correlation."""
 
 
+def _ce_c10():
+    """First-cycle coulombic efficiency at C/10, from results/measured_summary.json."""
+    meas = json.load(open(RESULTS / "measured_summary.json"))
+    return next(r for r in meas["gcd"] if r["rate"] == "C/10" and r["cycle"] == 1 and r["step"] == "discharge")["coulombic_efficiency"]
+
+
 def g(x, sig=3):
     return f"{x:.{sig}g}"
 
@@ -506,7 +512,14 @@ Three things would settle the rest. A current-interruption or GITT programme log
 ohmic drop (< 2 ms) from the double-layer relaxation that the present 48 ms first sample mixes into it. An EIS
 spectrum would give C_dl and the lithium-metal interphase resistance directly instead of as fitted effective
 values. And a measured particle-size distribution (SEM) would fix sd_p so the combined double-layer plus
-size-distribution model has nothing left to trade off."""
+size-distribution model has nothing left to trade off.
+
+One more lead is already in this data. The rests the model misses are the ones that start at the 4.5 V charge
+cut-off; the rests that start at 3.5 V are matched closely. At 4.5 V the cell also loses charge to a side
+reaction (first-cycle coulombic efficiency at C/10 is {100 * _ce_c10():.0f} %), which the model does not contain, and a
+slow parasitic current during the rest would pull the voltage down in the way the measured after-charge rests
+show. Adding an electrolyte-oxidation side reaction, constrained by the measured excess charge at C/10 and C/5,
+is the cheapest test of that explanation."""
 
     key_bullet = (
         f"- **v2.1, one model change (double layer{' and size distribution' if 'sd_p' in extra else ''}), same training data as v2:** the rests are now "
