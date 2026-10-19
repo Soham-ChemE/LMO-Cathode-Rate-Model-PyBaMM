@@ -1,0 +1,83 @@
+{
+  "model": "DFN",
+  "disc_mm": 14.0,
+  "training": [
+    "C/5 cycle 1 charge+discharge",
+    "C/2 cycle 1 charge+discharge"
+  ],
+  "particle_radius_m": 5e-06,
+  "training_rmse_V": 0.026213811425933733,
+  "n_residuals": 1200,
+  "fit_time_s": 155.25001072883606,
+  "converged": true,
+  "parameters": {
+    "Ds": {
+      "value": 1.1403199600516597e-14,
+      "log10": -13.942973273761574,
+      "sd_log10_jacobian": 0.00796471822072248,
+      "ci95_low_jacobian": 1.1000587467413679e-14,
+      "ci95_high_jacobian": 1.1820546994822778e-14,
+      "leave_one_step_out_min": 1.0668758966098107e-14,
+      "leave_one_step_out_max": 2.7768782573576775e-14,
+      "unit": "m2/s"
+    },
+    "k": {
+      "value": 2.4080676272207848e-11,
+      "log10": -10.618331320688133,
+      "sd_log10_jacobian": 0.09607167913791999,
+      "ci95_low_jacobian": 1.5608752281358947e-11,
+      "ci95_high_jacobian": 3.7150885559213194e-11,
+      "leave_one_step_out_min": 1.1958045133938422e-11,
+      "leave_one_step_out_max": 9.999998592210377e-09,
+      "unit": "m^2.5/(mol^0.5 s) in j0 = k F sqrt(c_e c_s (c_max - c_s))"
+    },
+    "R_contact": {
+      "value": 100.9347280883783,
+      "log10": 2.0040406173986747,
+      "sd_log10_jacobian": 0.019051347909215238,
+      "ci95_low_jacobian": 92.61897608393245,
+      "ci95_high_jacobian": 109.99710604706458,
+      "leave_one_step_out_min": 84.99808326035814,
+      "leave_one_step_out_max": 125.9635550395213,
+      "unit": "Ohm"
+    },
+    "tau_R2_over_Ds_s": {
+      "value": 2192.367131666049,
+      "ci95_low_jacobian": 2114.961347469756,
+      "ci95_high_jacobian": 2272.6059016444274,
+      "leave_one_step_out_min": 900.2915390244227,
+      "leave_one_step_out_max": 2343.2903563987134
+    }
+  },
+  "log10_correlation": {
+    "Ds-k": -0.5408382355783526,
+    "Ds-R_contact": -0.41139100391786154,
+    "k-R_contact": 0.9449753427504269
+  },
+  "leave_one_step_out": [
+    {
+      "Ds": 1.1163995469442503e-14,
+      "k": 2.2288694791617805e-11,
+      "R_contact": 99.78127121862526,
+      "dropped": "C/5 charge"
+    },
+    {
+      "Ds": 1.0668758966098107e-14,
+      "k": 1.9574784814231286e-11,
+      "R_contact": 94.57349479881147,
+      "dropped": "C/5 discharge"
+    },
+    {
+      "Ds": 1.1946606739673419e-14,
+      "k": 1.1958045133938422e-11,
+      "R_contact": 84.99808326035814,
+      "dropped": "C/2 charge"
+    },
+    {
+      "Ds": 2.7768782573576775e-14,
+      "k": 9.999998592210377e-09,
+      "R_contact": 125.9635550395213,
+      "dropped": "C/2 discharge"
+    }
+  ]
+}
