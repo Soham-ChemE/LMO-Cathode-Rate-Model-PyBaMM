@@ -286,14 +286,16 @@ def _loo_refit(args):
     return d
 
 
-def _fit_with_loo(kind, disc_mm, lam, mode, x0=None):
+def _fit_with_loo(kind, disc_mm, lam, mode, x0=None, leave_one_out=True):
     """Fit, then leave-one-block-out refits from the optimum. The refits are independent, so
     they run in ``LMO_WORKERS`` processes (default 1); the result does not depend on that."""
     result, res, elapsed = fit_v2(kind, disc_mm, lam, x0=x0, mode=mode)
     best = unpack(result.x)
     jobs = [(kind, disc_mm, lam, mode, best, [b for b in res.blocks if b != drop], block_label(drop)) for drop in res.blocks]
     workers = int(os.environ.get("LMO_WORKERS", "1"))
-    if workers > 1:
+    if not leave_one_out:
+        loo = []
+    elif workers > 1:
         # "spawn": a forked worker can deadlock on the solver's threads; a fresh interpreter cannot.
         with multiprocessing.get_context("spawn").Pool(workers) as pool:
             loo = pool.map(_loo_refit, jobs)
@@ -304,9 +306,12 @@ def _fit_with_loo(kind, disc_mm, lam, mode, x0=None):
     return result, res, summary
 
 
-def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, weighting_sensitivity: bool = True, x0: dict | None = None) -> dict:
+def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, weighting_sensitivity: bool = True, x0: dict | None = None, jump_loo: bool = True) -> dict:
     """Headline fit (full rest traces, lambda = 1) with leave-one-block-out refits, the
-    weighting sensitivity, and the jump-only variant with its own leave-one-out refits."""
+    weighting sensitivity, and the jump-only variant with its own leave-one-out refits.
+    ``weighting_sensitivity=False`` skips the other weightings (then only the jump-only
+    variant is refitted) and ``jump_loo=False`` skips its leave-one-out refits; the DFN run
+    uses both to stay within a few hours, the SPMe run does everything."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     lam, mode = WEIGHTINGS[HEADLINE]
@@ -316,14 +321,14 @@ def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, weighting_sensitiv
     with open(RESULTS_DIR / f"{PREFIX[mode]}fit_{kind.lower()}.json", "w") as f:
         json.dump(summary, f, indent=2)
     res.rest_frames(best).to_csv(PROCESSED_DIR / f"{PREFIX[mode]}model_rests_{kind.lower()}.csv", index=False)
-    if not weighting_sensitivity:
-        return summary
     sens = {"model": kind, "headline": HEADLINE, "weightings": {}}
-    for name, (lam_i, mode_i) in WEIGHTINGS.items():
+    names = list(WEIGHTINGS) if weighting_sensitivity else [HEADLINE, JUMP_VARIANT]
+    for name in names:
+        lam_i, mode_i = WEIGHTINGS[name]
         if name == HEADLINE:
             r, rs, el = result, res, summary["fit_time_s"]
         elif name == JUMP_VARIANT:
-            r, rs, jump_summary = _fit_with_loo(kind, disc_mm, lam_i, mode_i, x0=best)
+            r, rs, jump_summary = _fit_with_loo(kind, disc_mm, lam_i, mode_i, x0=best, leave_one_out=jump_loo)
             el = jump_summary["fit_time_s"]
             jump_summary["weighting"]["name"] = name
             with open(RESULTS_DIR / f"{PREFIX[mode_i]}fit_{kind.lower()}.json", "w") as f:
@@ -348,8 +353,9 @@ def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, weighting_sensitiv
             "rest_jumps": rest_jumps(rs, fit),
             "fit_time_s": el,
         }
-    with open(RESULTS_DIR / f"v2_weighting_sensitivity_{kind.lower()}.json", "w") as f:
-        json.dump(sens, f, indent=2)
+    if weighting_sensitivity:
+        with open(RESULTS_DIR / f"v2_weighting_sensitivity_{kind.lower()}.json", "w") as f:
+            json.dump(sens, f, indent=2)
     summary["weighting_sensitivity"] = sens["weightings"]
     return summary
 

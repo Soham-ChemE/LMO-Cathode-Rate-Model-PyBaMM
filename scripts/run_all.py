@@ -75,8 +75,10 @@ def run_v2(kinds, headline):
     print("v2-1. post-step rests: model-free resistance table")
     relaxation.measured_rests()
     for kind in kinds:
-        print(f"v2-2. {kind} fit on C/5 and C/2 curves plus C/10, C/5, C/2 rests (with LOO and weighting sensitivity)")
-        fit_v2.run(kind)
+        print(f"v2-2. {kind} fit on C/5 and C/2 curves plus C/10, C/5, C/2 rests (with LOO; weighting sensitivity on the SPMe)")
+        # The DFN costs ~8 min per fit: it runs the headline fit with LOO and the jump-only fit
+        # without LOO; the weighting sensitivity and the jump-only LOO are SPMe only.
+        fit_v2.run(kind, weighting_sensitivity=(kind == "SPMe"), jump_loo=(kind == "SPMe"))
         print(f"v2-3. {kind} blind validation (all rates, CVs)")
         validate.predict_all(kind, prefix="v2_", mesh="v2")
         validate.validate_cv(kind, prefix="v2_", mesh="v2")
