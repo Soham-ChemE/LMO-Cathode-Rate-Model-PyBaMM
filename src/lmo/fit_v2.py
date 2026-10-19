@@ -13,8 +13,11 @@ measured from the last sample under current) to the v1 curve residual. No 2C dat
 Weighting: a rest has 10 to 25 logged points against 300 per curve step, so unweighted it
 would barely move the fit. Each rest residual is multiplied by w = sqrt(lambda * N_curve /
 N_rest), so that the rest block carries ``lambda`` times the summed squared weight of the curve
-block. lambda = 1 (equal block weight) is the headline; the pipeline also refits at the other
-values in ``WEIGHTINGS`` as a sensitivity check.
+block. lambda = 1 (equal block weight) on the full rest traces is the headline; the pipeline
+also refits at the other entries of ``WEIGHTINGS`` as a sensitivity check. One of them,
+"jump only", keeps only the first logged sample of each rest (the instantaneous jump): the
+model has no double-layer capacitance and a single particle size, so the one rest feature it
+can represent is that jump, and this variant is reported in full (prefix ``v2_jump_``).
 """
 
 from __future__ import annotations
@@ -37,7 +40,17 @@ REST_TRAINING = [("C/10", 1), ("C/5", 1), ("C/2", 1)]
 REST_KINDS = ("charge", "discharge")
 REST_PERIOD_S = 0.05  # model output interval inside the rests
 HEADLINE_LAMBDA = 1.0
-WEIGHTINGS = {"unweighted": None, "lambda=0.25": 0.25, "lambda=1": 1.0, "lambda=4": 4.0}
+# name -> (lambda, which rest points enter the residual: the whole trace or the first sample)
+WEIGHTINGS = {
+    "unweighted": (None, "trace"),
+    "lambda=0.25": (0.25, "trace"),
+    "lambda=1": (1.0, "trace"),
+    "lambda=4": (4.0, "trace"),
+    "jump only, lambda=1": (1.0, "jump"),
+}
+HEADLINE = "lambda=1"
+JUMP_VARIANT = "jump only, lambda=1"
+PREFIX = {"trace": "v2_", "jump": "v2_jump_"}
 FORBIDDEN_RATE = "2C"
 
 
@@ -48,25 +61,31 @@ def rest_key(rate: str, after: str) -> str:
 class V2Residual:
     """Curve residuals (v1) plus weighted rest residuals, sharing one simulation per rate."""
 
-    def __init__(self, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, lam: float | None = HEADLINE_LAMBDA):
+    def __init__(self, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, lam: float | None = HEADLINE_LAMBDA, mode: str = "trace"):
         rates = {r for r, _ in TRAINING} | {r for r, _ in REST_TRAINING}
         assert FORBIDDEN_RATE not in rates, "2C must never enter the fit"
+        assert mode in ("trace", "jump")
         cycles = dict(TRAINING + REST_TRAINING)
-        self.kind, self.disc_mm, self.lam = kind, disc_mm, lam
+        self.kind, self.disc_mm, self.lam, self.mode = kind, disc_mm, lam, mode
         self.sims = {r: RateSimulator(r, cycles[r], kind, disc_mm, rest_period_s=REST_PERIOD_S, mesh="v2") for r in sorted(rates)}
         self.curve_points = {}
         for rate, cyc in TRAINING:
             for k, (t, v) in self.sims[rate].residual_points(N_POINTS_PER_STEP).items():
                 self.curve_points[(rate, k)] = (t, v)
         self.rests: dict[tuple[str, str], Rest] = {(r, a): get_rest(r, c, a) for r, c in REST_TRAINING for a in REST_KINDS}
+        # Which measured rest samples enter the residual.
+        self.rest_idx = {key: (np.arange(len(r.time_s)) if mode == "trace" else np.array([0])) for key, r in self.rests.items()}
         n_curve = sum(len(v[0]) for v in self.curve_points.values())
-        n_rest = sum(len(r.time_s) for r in self.rests.values())
+        n_rest = sum(len(idx) for idx in self.rest_idx.values())
         self.n_curve, self.n_rest = n_curve, n_rest
         self.w_rest = 1.0 if lam is None else float(np.sqrt(lam * n_curve / n_rest))
         self.blocks = [("curve", rate, k) for rate, k in self.curve_points] + [("rest", rate, a) for rate, a in self.rests]
 
     def block_sizes(self) -> dict[str, int]:
-        return {**{f"{r} {k}": len(v[0]) for (r, k), v in self.curve_points.items()}, **{rest_key(r, a): len(x.time_s) for (r, a), x in self.rests.items()}}
+        return {**{f"{r} {k}": len(v[0]) for (r, k), v in self.curve_points.items()}, **{rest_key(r, a): len(idx) for (r, a), idx in self.rest_idx.items()}}
+
+    def _n(self, b) -> int:
+        return len(self.curve_points[(b[1], b[2])][0]) if b[0] == "curve" else len(self.rest_idx[(b[1], b[2])])
 
     def evaluate(self, fit: dict, blocks=None) -> dict[tuple, np.ndarray]:
         """Unweighted residual (model - measured, V) of every block, keyed like ``self.blocks``."""
@@ -81,8 +100,9 @@ class V2Residual:
                 out[b] = model_on_measured_grid(frames[rate][k], t, k) - v
             else:
                 r = self.rests[(rate, k)]
+                idx = self.rest_idx[(rate, k)]
                 f = frames[rate][f"rest after {k}"]
-                out[b] = np.interp(r.time_s, f["time_s"].to_numpy(), f["voltage_V"].to_numpy()) - r.voltage_V
+                out[b] = np.interp(r.time_s[idx], f["time_s"].to_numpy(), f["voltage_V"].to_numpy()) - r.voltage_V[idx]
         return out
 
     def weighted(self, theta, blocks=None) -> np.ndarray:
@@ -90,17 +110,23 @@ class V2Residual:
         try:
             res = self.evaluate(unpack(theta), blocks)
         except pybamm.SolverError:
-            n = sum(len(self.curve_points[(b[1], b[2])][0]) if b[0] == "curve" else len(self.rests[(b[1], b[2])].time_s) for b in blocks)
-            return np.full(n, 1.0)
+            return np.full(sum(self._n(b) for b in blocks), 1.0)
         return np.concatenate([res[b] * (self.w_rest if b[0] == "rest" else 1.0) for b in blocks])
 
     def rmse_by_type(self, fit: dict) -> dict:
+        """Unweighted RMSE of the curves, of the fitted rest points, and of the full rest traces
+        (the last is the same number whatever ``mode`` is, so variants can be compared)."""
         res = self.evaluate(fit)
         curve = np.concatenate([v for b, v in res.items() if b[0] == "curve"])
         rest = np.concatenate([v for b, v in res.items() if b[0] == "rest"])
+        full = V2Residual.__new__(V2Residual)
+        full.__dict__.update(self.__dict__)
+        full.rest_idx = {key: np.arange(len(r.time_s)) for key, r in self.rests.items()}
+        trace = np.concatenate([v for b, v in full.evaluate(fit).items() if b[0] == "rest"])
         return {
             "curves_mV": float(1000 * np.sqrt(np.mean(curve**2))),
             "rests_mV": float(1000 * np.sqrt(np.mean(rest**2))),
+            "rest_traces_mV": float(1000 * np.sqrt(np.mean(trace**2))),
             "per_block_mV": {f"{b[1]} {b[2] if b[0] == 'curve' else 'rest after ' + b[2]}": float(1000 * np.sqrt(np.mean(v**2))) for b, v in res.items()},
         }
 
@@ -117,8 +143,16 @@ class V2Residual:
         return pd.concat(rows, ignore_index=True)
 
 
-def fit_v2(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, lam: float | None = HEADLINE_LAMBDA, x0: dict | None = None, blocks=None, verbose=True):
-    res = V2Residual(kind, disc_mm, lam)
+def fit_v2(
+    kind: str = "SPMe",
+    disc_mm: float = DEFAULT_DISC_MM,
+    lam: float | None = HEADLINE_LAMBDA,
+    x0: dict | None = None,
+    blocks=None,
+    verbose=True,
+    mode: str = "trace",
+):
+    res = V2Residual(kind, disc_mm, lam, mode)
     x0 = {**DEFAULT_FIT, **(x0 or {})}
     theta0 = np.array([np.log10(x0[n]) for n in PARAM_NAMES])
     lb = np.array([BOUNDS_LOG10[n][0] for n in PARAM_NAMES])
@@ -139,7 +173,7 @@ def summarise(result, res: V2Residual, elapsed: float, loo: list[dict] | None = 
     rep = covariance_report(result)
     rm = res.rmse_by_type(fit)
     out = {
-        "version": "v2",
+        "version": "v2" if res.mode == "trace" else "v2 (jump only)",
         "model": res.kind,
         "disc_mm": res.disc_mm,
         "training_curves": [f"{r} cycle {c} charge+discharge" for r, c in TRAINING],
@@ -148,6 +182,7 @@ def summarise(result, res: V2Residual, elapsed: float, loo: list[dict] | None = 
         "particle_radius_m": PARTICLE_RADIUS_M,
         "weighting": {
             "lambda": res.lam,
+            "rest_points": "every logged sample of each rest" if res.mode == "trace" else "first logged sample of each rest only (the instantaneous jump)",
             "rest_weight": res.w_rest,
             "rule": "w_rest = sqrt(lambda * N_curve / N_rest): the rest block carries lambda times the summed squared weight of the curve block",
             "n_curve_points": res.n_curve,
@@ -157,6 +192,7 @@ def summarise(result, res: V2Residual, elapsed: float, loo: list[dict] | None = 
         "block_sizes": res.block_sizes(),
         "training_rmse_curves_V": rm["curves_mV"] / 1000,
         "training_rmse_rests_V": rm["rests_mV"] / 1000,
+        "training_rmse_rest_traces_V": rm["rest_traces_mV"] / 1000,
         "training_rmse_per_block_mV": rm["per_block_mV"],
         "weighted_rmse_V": rep["rmse_V"],
         "n_residuals": int(len(result.fun)),
@@ -224,47 +260,68 @@ def rest_jumps(res: V2Residual, fit: dict) -> dict:
     return out
 
 
-def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, leave_one_out: bool = True, weighting_sensitivity: bool = True, x0: dict | None = None) -> dict:
-    result, res, elapsed = fit_v2(kind, disc_mm, HEADLINE_LAMBDA, x0=x0)
+def _fit_with_loo(kind, disc_mm, lam, mode, x0=None):
+    result, res, elapsed = fit_v2(kind, disc_mm, lam, x0=x0, mode=mode)
     best = unpack(result.x)
     loo = []
-    if leave_one_out:
-        for drop in res.blocks:
-            keep = [b for b in res.blocks if b != drop]
-            r, _, _ = fit_v2(kind, disc_mm, HEADLINE_LAMBDA, x0=best, blocks=keep, verbose=False)
-            d = unpack(r.x)
-            d["dropped"] = block_label(drop)
-            loo.append(d)
+    for drop in res.blocks:
+        keep = [b for b in res.blocks if b != drop]
+        r, _, _ = fit_v2(kind, disc_mm, lam, x0=best, blocks=keep, verbose=False, mode=mode)
+        d = unpack(r.x)
+        d["dropped"] = block_label(drop)
+        loo.append(d)
     summary = summarise(result, res, elapsed, loo)
     summary["leave_one_step_out"] = loo
+    return result, res, summary
+
+
+def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, weighting_sensitivity: bool = True, x0: dict | None = None) -> dict:
+    """Headline fit (full rest traces, lambda = 1) with leave-one-block-out refits, the
+    weighting sensitivity, and the jump-only variant with its own leave-one-out refits."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    with open(RESULTS_DIR / f"v2_fit_{kind.lower()}.json", "w") as f:
+    lam, mode = WEIGHTINGS[HEADLINE]
+    result, res, summary = _fit_with_loo(kind, disc_mm, lam, mode, x0)
+    best = unpack(result.x)
+    summary["weighting"]["name"] = HEADLINE
+    with open(RESULTS_DIR / f"{PREFIX[mode]}fit_{kind.lower()}.json", "w") as f:
         json.dump(summary, f, indent=2)
-    res.rest_frames(best).to_csv(PROCESSED_DIR / f"v2_model_rests_{kind.lower()}.csv", index=False)
-    if weighting_sensitivity:
-        sens = {"model": kind, "headline_lambda": HEADLINE_LAMBDA, "weightings": {}}
-        for name, lam in WEIGHTINGS.items():
-            if lam == HEADLINE_LAMBDA:
-                r, rs, el = result, res, elapsed
-            else:
-                r, rs, el = fit_v2(kind, disc_mm, lam, x0=best, verbose=False)
-            fit = unpack(r.x)
-            rep = covariance_report(r)
-            rm = rs.rmse_by_type(fit)
-            sens["weightings"][name] = {
-                "lambda": lam,
-                "rest_weight": rs.w_rest,
-                "parameters": fit,
-                "tau_R2_over_Ds_s": PARTICLE_RADIUS_M**2 / fit["Ds"],
-                "training_rmse_curves_mV": rm["curves_mV"],
-                "training_rmse_rests_mV": rm["rests_mV"],
-                "k_R_contact_correlation": float(rep["corr"][1, 2]),
-                "fit_time_s": el,
-            }
-        with open(RESULTS_DIR / f"v2_weighting_sensitivity_{kind.lower()}.json", "w") as f:
-            json.dump(sens, f, indent=2)
-        summary["weighting_sensitivity"] = sens["weightings"]
+    res.rest_frames(best).to_csv(PROCESSED_DIR / f"{PREFIX[mode]}model_rests_{kind.lower()}.csv", index=False)
+    if not weighting_sensitivity:
+        return summary
+    sens = {"model": kind, "headline": HEADLINE, "weightings": {}}
+    for name, (lam_i, mode_i) in WEIGHTINGS.items():
+        if name == HEADLINE:
+            r, rs, el = result, res, summary["fit_time_s"]
+        elif name == JUMP_VARIANT:
+            r, rs, jump_summary = _fit_with_loo(kind, disc_mm, lam_i, mode_i, x0=best)
+            el = jump_summary["fit_time_s"]
+            jump_summary["weighting"]["name"] = name
+            with open(RESULTS_DIR / f"{PREFIX[mode_i]}fit_{kind.lower()}.json", "w") as f:
+                json.dump(jump_summary, f, indent=2)
+            rs.rest_frames(unpack(r.x)).to_csv(PROCESSED_DIR / f"{PREFIX[mode_i]}model_rests_{kind.lower()}.csv", index=False)
+        else:
+            r, rs, el = fit_v2(kind, disc_mm, lam_i, x0=best, verbose=False, mode=mode_i)
+        fit = unpack(r.x)
+        rep = covariance_report(r)
+        rm = rs.rmse_by_type(fit)
+        sens["weightings"][name] = {
+            "lambda": lam_i,
+            "rest_points": "trace" if mode_i == "trace" else "first sample only",
+            "rest_weight": rs.w_rest,
+            "n_rest_points": rs.n_rest,
+            "parameters": fit,
+            "tau_R2_over_Ds_s": PARTICLE_RADIUS_M**2 / fit["Ds"],
+            "training_rmse_curves_mV": rm["curves_mV"],
+            "training_rmse_fitted_rest_points_mV": rm["rests_mV"],
+            "training_rmse_rest_traces_mV": rm["rest_traces_mV"],
+            "k_R_contact_correlation": float(rep["corr"][1, 2]),
+            "rest_jumps": rest_jumps(rs, fit),
+            "fit_time_s": el,
+        }
+    with open(RESULTS_DIR / f"v2_weighting_sensitivity_{kind.lower()}.json", "w") as f:
+        json.dump(sens, f, indent=2)
+    summary["weighting_sensitivity"] = sens["weightings"]
     return summary
 
 
@@ -272,5 +329,5 @@ if __name__ == "__main__":
     import sys
 
     kind = sys.argv[1] if len(sys.argv) > 1 else "SPMe"
-    out = run(kind, leave_one_out="--no-loo" not in sys.argv, weighting_sensitivity="--no-sens" not in sys.argv)
+    out = run(kind, weighting_sensitivity="--no-sens" not in sys.argv)
     print(json.dumps({k: out[k] for k in ("parameters", "log10_correlation", "training_rmse_curves_V", "training_rmse_rests_V")}, indent=2))
