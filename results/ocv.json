@@ -1,0 +1,36 @@
+{
+  "source": "C/10 cycle 2, average of charge and discharge vs normalised capacity",
+  "reference_discharge_capacity_mAh": 1.42187761797334,
+  "charge_capacity_mAh": 1.5051125644749301,
+  "active_mass_g": 0.013036363636363636,
+  "lmo_c_max_mol_m3": 23671.257120734474,
+  "theoretical_capacity_mAh": 1.9323746004930675,
+  "stoichiometry_window": {
+    "sto_min": 0.26418116983604967,
+    "sto_max": 1.0
+  },
+  "ocv_at_x0_V": 3.6449061328301844,
+  "ocv_at_x1_V": 4.4395590787770765,
+  "mean_charge_discharge_hysteresis_mV": 53.747226821262075,
+  "median_charge_discharge_hysteresis_mV": 49.66017218473784,
+  "dqdv_peaks_discharge": [
+    {
+      "voltage_V": 3.9874999999999896,
+      "dqdv_mAh_V": 6.622185140057883
+    },
+    {
+      "voltage_V": 4.1124999999999865,
+      "dqdv_mAh_V": 11.375392783439166
+    }
+  ],
+  "dqdv_peaks_charge": [
+    {
+      "voltage_V": 4.027499999999993,
+      "dqdv_mAh_V": 6.816323698934722
+    },
+    {
+      "voltage_V": 4.15249999999999,
+      "dqdv_mAh_V": 12.11464270333079
+    }
+  ]
+}
