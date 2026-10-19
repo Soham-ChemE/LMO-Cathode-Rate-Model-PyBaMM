@@ -16,7 +16,7 @@ open circuit the oxidation is balanced by lithium re-intercalation (self-dischar
 the voltage down with a Tafel-limited, log(t)-like decay.
 
 Implementation: PyBaMM's SEI machinery already provides a second interfacial reaction on the
-positive electrode (the "SEI" option accepts a 2-tuple since v24.1), but all its built-in
+positive electrode (the "SEI" option accepts a 2-tuple since v23.9), but all its built-in
 kinetics are cathodic. ``OxidationCurrent`` subclasses ``pybamm.sei.SEIGrowth`` and replaces its
 reaction rate with the anodic law above; the "SEI concentration" state is kept as a counter of
 the charge passed by the side reaction, so ``"Loss of capacity to positive SEI [A.h]"`` is the

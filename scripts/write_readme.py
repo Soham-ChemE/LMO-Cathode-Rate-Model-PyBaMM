@@ -773,7 +773,7 @@ j_ox = j_ref · exp(α_ox F (φ_s − φ_e − 4.5 V) / RT), with two fitted par
 4.5 V) and α_ox (the Tafel slope is 59 mV / α_ox per decade); a free onset potential would be degenerate with j_ref. The
 reaction consumes nothing the model tracks, so its only effects are that part of the charging current never enters the
 particles and that at open circuit the oxidation is balanced by re-intercalation. In PyBaMM the second interfacial
-reaction is carried by the SEI machinery, which since v24.1 runs on the positive electrode through a 2-tuple `SEI`
+reaction is carried by the SEI machinery, which since PyBaMM 23.9 runs on the positive electrode through a 2-tuple `SEI`
 option; because all of PyBaMM's built-in SEI kinetics are cathodic, `src/lmo/oxidation.py` subclasses `SEIGrowth` and
 replaces its rate with the anodic law above (the lithium-metal counter electrode gets no side reaction, and the SEI
 "concentration" state is kept only as a counter of the parasitic charge). Everything else is v2.1: double layer, same
