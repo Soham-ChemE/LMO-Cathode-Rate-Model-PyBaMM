@@ -1,0 +1,234 @@
+{
+  "version": "v2",
+  "model": "DFN",
+  "disc_mm": 10.0,
+  "training_curves": [
+    "C/5 cycle 1 charge+discharge",
+    "C/2 cycle 1 charge+discharge"
+  ],
+  "training_rests": [
+    "C/10 cycle 1 rest after charge",
+    "C/10 cycle 1 rest after discharge",
+    "C/5 cycle 1 rest after charge",
+    "C/5 cycle 1 rest after discharge",
+    "C/2 cycle 1 rest after charge",
+    "C/2 cycle 1 rest after discharge"
+  ],
+  "two_c_used": false,
+  "particle_radius_m": 5e-06,
+  "weighting": {
+    "lambda": 1.0,
+    "rest_points": "every logged sample of each rest",
+    "rest_weight": 3.4469099377285564,
+    "rule": "w_rest = sqrt(lambda * N_curve / N_rest): the rest block carries lambda times the summed squared weight of the curve block",
+    "n_curve_points": 1200,
+    "n_rest_points": 101,
+    "rest_period_s": 0.05,
+    "name": "lambda=1"
+  },
+  "block_sizes": {
+    "C/5 charge": 300,
+    "C/5 discharge": 300,
+    "C/2 charge": 300,
+    "C/2 discharge": 300,
+    "C/10 rest after charge": 11,
+    "C/10 rest after discharge": 18,
+    "C/5 rest after charge": 12,
+    "C/5 rest after discharge": 22,
+    "C/2 rest after charge": 15,
+    "C/2 rest after discharge": 23
+  },
+  "training_rmse_curves_V": 0.028761302217362273,
+  "training_rmse_rests_V": 0.040176821578758334,
+  "training_rmse_rest_traces_V": 0.040176821578758334,
+  "training_rmse_per_block_mV": {
+    "C/5 charge": 29.856041242359215,
+    "C/5 discharge": 14.815671096848282,
+    "C/2 charge": 22.55944106548115,
+    "C/2 discharge": 41.09786285260383,
+    "C/10 rest after charge": 33.04717586002951,
+    "C/10 rest after discharge": 36.157897687683175,
+    "C/5 rest after charge": 34.42309674841774,
+    "C/5 rest after discharge": 46.007556403074545,
+    "C/2 rest after charge": 30.157092258335258,
+    "C/2 rest after discharge": 48.02946296176242
+  },
+  "weighted_rmse_V": 0.0474537470254744,
+  "n_residuals": 1301,
+  "fit_time_s": 391.0033555030823,
+  "converged": true,
+  "parameters": {
+    "Ds": {
+      "value": 1.2065877785589646e-13,
+      "log10": -12.918441077934983,
+      "sd_log10_jacobian": 0.03221630044926435,
+      "ci95_low_jacobian": 1.0433138512042324e-13,
+      "ci95_high_jacobian": 1.3954133415246574e-13,
+      "leave_one_step_out_min": 5.95793817768391e-14,
+      "leave_one_step_out_max": 1.6019122546117058e-13,
+      "unit": "m2/s"
+    },
+    "k": {
+      "value": 9.993216147794299e-09,
+      "log10": -8.00029471893569,
+      "sd_log10_jacobian": 15.346145578120755,
+      "ci95_low_jacobian": 8.341803357535747e-39,
+      "ci95_high_jacobian": 1.1971556352538918e+22,
+      "leave_one_step_out_min": 9.99999959993057e-09,
+      "leave_one_step_out_max": 9.999999999999959e-09,
+      "unit": "m^2.5/(mol^0.5 s) in j0 = k F sqrt(c_e c_s (c_max - c_s))"
+    },
+    "R_contact": {
+      "value": 135.44239738103886,
+      "log10": 2.1317546323435073,
+      "sd_log10_jacobian": 0.009190839923847937,
+      "ci95_low_jacobian": 129.93931892664324,
+      "ci95_high_jacobian": 141.1785374885614,
+      "leave_one_step_out_min": 129.68004642638573,
+      "leave_one_step_out_max": 140.6822255957786,
+      "unit": "Ohm"
+    },
+    "tau_R2_over_Ds_s": {
+      "value": 207.1958662622761,
+      "ci95_low_jacobian": 179.15838451626453,
+      "ci95_high_jacobian": 239.6210878552417,
+      "leave_one_step_out_min": 156.06347930748464,
+      "leave_one_step_out_max": 419.60824792778413
+    }
+  },
+  "log10_correlation": {
+    "Ds-k": -0.5438251659371467,
+    "Ds-R_contact": -0.19672261968486507,
+    "k-R_contact": 0.6227779179538052
+  },
+  "rest_jumps": {
+    "C/10 rest after charge": {
+      "current_mA": 0.1466875751679145,
+      "first_sample_delay_s": 0.04840000015246915,
+      "jump_measured_mV": 10.367800000000038,
+      "jump_model_mV": 21.244131359267726,
+      "instantaneous_resistance_measured_ohm": 70.67946953333934,
+      "instantaneous_resistance_model_ohm": 144.82570411944837,
+      "relaxation_30s_measured_mV": 72.55410000000052,
+      "relaxation_30s_model_mV": 25.30504686508106,
+      "end_of_rest_error_mV": 47.24905313491945
+    },
+    "C/10 rest after discharge": {
+      "current_mA": 0.1402053092400055,
+      "first_sample_delay_s": 0.048399987164884806,
+      "jump_measured_mV": 13.786100000000356,
+      "jump_model_mV": 40.2330796150312,
+      "instantaneous_resistance_measured_ohm": 98.32794545890634,
+      "instantaneous_resistance_model_ohm": 286.9583172928182,
+      "relaxation_30s_measured_mV": 173.08240000000018,
+      "relaxation_30s_model_mV": 142.65088491851063,
+      "end_of_rest_error_mV": -30.431515081489557
+    },
+    "C/5 rest after charge": {
+      "current_mA": 0.2871264976975961,
+      "first_sample_delay_s": 0.0483999993884936,
+      "jump_measured_mV": 19.31620000000045,
+      "jump_model_mV": 41.573709034240736,
+      "instantaneous_resistance_measured_ohm": 67.27418108357392,
+      "instantaneous_resistance_model_ohm": 144.79231059345312,
+      "relaxation_30s_measured_mV": 104.74780000000017,
+      "relaxation_30s_model_mV": 49.51253748964213,
+      "end_of_rest_error_mV": 55.23526251035804
+    },
+    "C/5 rest after discharge": {
+      "current_mA": 0.2863935096132857,
+      "first_sample_delay_s": 0.04840000014519319,
+      "jump_measured_mV": 26.39979999999964,
+      "jump_model_mV": 73.54267268590098,
+      "instantaneous_resistance_measured_ohm": 92.1801616092733,
+      "instantaneous_resistance_model_ohm": 256.78889436148506,
+      "relaxation_30s_measured_mV": 226.6608999999997,
+      "relaxation_30s_model_mV": 170.8152210107583,
+      "end_of_rest_error_mV": -55.84567898924142
+    },
+    "C/2 rest after charge": {
+      "current_mA": 0.717257040977103,
+      "first_sample_delay_s": 0.04839999941759743,
+      "jump_measured_mV": 50.232799999999855,
+      "jump_model_mV": 104.5398046849364,
+      "instantaneous_resistance_measured_ohm": 70.03458611095523,
+      "instantaneous_resistance_model_ohm": 145.74942971981733,
+      "relaxation_30s_measured_mV": 171.3786000000006,
+      "relaxation_30s_model_mV": 131.2904071523633,
+      "end_of_rest_error_mV": 40.088192847637316
+    },
+    "C/2 rest after discharge": {
+      "current_mA": 0.7165621104061113,
+      "first_sample_delay_s": 0.04839999941032147,
+      "jump_measured_mV": 72.55840000000013,
+      "jump_model_mV": 136.32731070621463,
+      "instantaneous_resistance_measured_ohm": 101.259052001616,
+      "instantaneous_resistance_model_ohm": 190.2519107924241,
+      "relaxation_30s_measured_mV": 285.36440000000016,
+      "relaxation_30s_model_mV": 203.91857366270204,
+      "end_of_rest_error_mV": -81.44582633729813
+    }
+  },
+  "leave_one_step_out": [
+    {
+      "Ds": 1.202997013243498e-13,
+      "k": 9.99999959993057e-09,
+      "R_contact": 136.78609817340595,
+      "dropped": "C/5 charge"
+    },
+    {
+      "Ds": 1.2334773204462825e-13,
+      "k": 9.999999996866283e-09,
+      "R_contact": 133.75968638987453,
+      "dropped": "C/5 discharge"
+    },
+    {
+      "Ds": 1.258902849019349e-13,
+      "k": 9.999999996509904e-09,
+      "R_contact": 140.6822255957786,
+      "dropped": "C/2 charge"
+    },
+    {
+      "Ds": 1.1935295290556755e-13,
+      "k": 9.999999983776416e-09,
+      "R_contact": 129.68004642638573,
+      "dropped": "C/2 discharge"
+    },
+    {
+      "Ds": 1.2294855088363798e-13,
+      "k": 9.999999999997955e-09,
+      "R_contact": 134.42120398448375,
+      "dropped": "C/10 rest after charge"
+    },
+    {
+      "Ds": 5.95793817768391e-14,
+      "k": 9.999999999961225e-09,
+      "R_contact": 131.1628145839733,
+      "dropped": "C/10 rest after discharge"
+    },
+    {
+      "Ds": 1.2534727731898914e-13,
+      "k": 9.999999999999959e-09,
+      "R_contact": 133.53482866649057,
+      "dropped": "C/5 rest after charge"
+    },
+    {
+      "Ds": 8.608849758929957e-14,
+      "k": 9.999999999651881e-09,
+      "R_contact": 134.53511865954633,
+      "dropped": "C/5 rest after discharge"
+    },
+    {
+      "Ds": 1.3397279390754207e-13,
+      "k": 9.999999958987274e-09,
+      "R_contact": 136.03363338428562,
+      "dropped": "C/2 rest after charge"
+    },
+    {
+      "Ds": 1.6019122546117058e-13,
+      "k": 9.999999964011486e-09,
+      "R_contact": 138.28910838912367,
+      "dropped": "C/2 rest after discharge"
+    }
+  ]
+}
