@@ -662,7 +662,13 @@ def v3_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
                 f"oxidation peak the measured current exceeds the intercalation-only v2.1 model by {1000 * lo['measured_minus_v2.1_mA']:.0f} µA at {lo['voltage_V']:.2f} V and "
                 f"{1000 * hi['measured_minus_v2.1_mA']:.0f} µA at {hi['voltage_V']:.2f} V, an upper bound on the parasitic current there, and the v3 model gives "
                 f"{hi['v3_mA']:.2f} mA at {hi['voltage_V']:.2f} V against {hi['measured_mA']:.2f} mA measured (v2.1: {hi['v2.1_mA']:.2f} mA). "
-                f"The fitted leak extrapolated to 4.8 V is {1000 * lk['current_mA_vs_surface_potential_V']['4.8']:.0f} µA."
+                f"The fitted leak extrapolated to 4.8 V is {1000 * lk['current_mA_vs_surface_potential_V']['4.8']:.0f} µA, "
+                + (
+                    f"{lk['current_mA_vs_surface_potential_V']['4.8'] / max(hi['measured_minus_v2.1_mA'], 1e-6):.0f} times the upper bound the CV allows: a steady potential-driven oxidation with this slope is contradicted by the CV, "
+                    f"and the excess charge at C/10 must come mostly from something that does not grow with potential and fades with cycling (surface-film formation on the fresh electrode, plus the C/10 current-range offset)."
+                    if lk["current_mA_vs_surface_potential_V"]["4.8"] > 3 * max(hi["measured_minus_v2.1_mA"], 1e-6)
+                    else "consistent with the CV."
+                )
             )
 
     # --- verdicts
@@ -696,25 +702,29 @@ def v3_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
     else:
         headline_rule = f"v3 does not improve the blind 2C prediction, so v1 stays the headline."
 
-    # how the leak compares with the charging currents
+    # how the leak compares with the charging currents, and why that settles the rests
     i_ref_mA = lk["current_at_reference_potential_mA"]
-    i_c10 = ce_c10["charge_mAh_measured"] / 10.67  # ~ mA; only for the sentence below
-    leak_vs_current = f"{1000 * i_ref_mA:.0f} µA at 4.5 V, {100 * i_ref_mA / 0.147:.0f} % of the C/10 charging current and {100 * i_ref_mA / 0.717:.0f} % of the C/2 one"
+    meas = json.load(open(RESULTS / "measured_summary.json"))
+    i_c10 = next(r for r in meas["gcd"] if r["rate"] == "C/10" and r["cycle"] == 1 and r["step"] == "charge")["mean_current_mA"]
+    leak_vs_current = f"{1000 * i_ref_mA:.0f} µA at 4.5 V, {100 * i_ref_mA / i_c10:.0f} % of the C/10 charging current and {100 * i_ref_mA / 0.717:.0f} % of the C/2 one"
     slope_txt = (
-        f"a Tafel slope of {lk['tafel_slope_mV_per_decade']:.0f} mV per decade, i.e. the leak is nearly potential-independent over the 3.5 to 4.5 V window "
-        f"({1000 * lk['current_mA_vs_surface_potential_V']['4.0']:.0f} µA at 4.0 V against {1000 * lk['current_mA_vs_surface_potential_V']['4.5']:.0f} µA at 4.5 V)"
-        if lk["tafel_slope_mV_per_decade"] > 300
-        else f"a Tafel slope of {lk['tafel_slope_mV_per_decade']:.0f} mV per decade ({1000 * lk['current_mA_vs_surface_potential_V']['4.0']:.0f} µA at 4.0 V against {1000 * lk['current_mA_vs_surface_potential_V']['4.5']:.0f} µA at 4.5 V)"
+        f"a Tafel slope of {lk['tafel_slope_mV_per_decade']:.0f} mV per decade ({1000 * lk['current_mA_vs_surface_potential_V']['4.0']:.0f} µA at 4.0 V, "
+        f"{1000 * lk['current_mA_vs_surface_potential_V']['4.3']:.0f} µA at 4.3 V, {1000 * lk['current_mA_vs_surface_potential_V']['4.5']:.0f} µA at 4.5 V)"
     )
+    j_c10 = f3["rest_jumps"]["C/10 rest after charge"]
+    j21_c10 = f21["rest_jumps"]["C/10 rest after charge"]
     why_txt = ""
     if not rest_helped:
         why_txt = (
-            f" The reason is arithmetic, not the optimiser: the excess charge caps the leak at tens of microamps, and at open circuit that leak is balanced by "
-            f"re-intercalation of the same few microamps, which costs only a few millivolts of charge-transfer overpotential; the {rchg21:.0f} mV the after-charge rests "
-            f"miss would need a self-discharge current of the order of the charging current itself. The side reaction therefore explains the coulombic "
-            f"efficiency and the longer measured charges, not the after-charge rests."
+            f" The reason is arithmetic, not the optimiser. To pass the measured excess the leak has to be as large as the C/10 charging current at the "
+            f"cut-off ({1000 * i_ref_mA:.0f} µA against {1000 * i_c10:.0f} µA), so at the end of the C/10 charge almost all of the applied current goes into the side reaction and the "
+            f"intercalation current, with its overpotential, has already fallen towards zero before the current is switched off; at open circuit the same leak is "
+            f"then supplied by re-intercalation. Whatever the leak takes from the applied current before the switch-off it takes back after it, so the voltage "
+            f"swing between the last sample under current and the rest is still set by the overpotential of the applied current, with or without the leak: "
+            f"the model's 30 s relaxation after the C/10 charge moves from {j21_c10['relaxation_30s_model_mV']:.0f} mV (v2.1) to {j_c10['relaxation_30s_model_mV']:.0f} mV (v3) against "
+            f"{j_c10['relaxation_30s_measured_mV']:.0f} mV measured. A side reaction redistributes the relaxation; it does not enlarge it. The side reaction therefore "
+            f"explains the coulombic efficiency and the longer measured charges, not the after-charge rests."
         )
-
     sh3 = ov3["two_c"]["shares"] if ov3 else None
     ov_txt = (
         f"At 2C the v3 model attributes {100 * sh3['contact_ohmic']:.0f} % of the mean loss to contact/ohmic resistance, {100 * sh3['reaction']:.0f} % to charge transfer and "
