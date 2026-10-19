@@ -1,0 +1,24 @@
+{
+  "model": "SPMe",
+  "headline_variant": "dl",
+  "chosen_on": "training curves and rests only (never 2C)",
+  "variants": {
+    "dl": {
+      "model_options": {
+        "surface form": "differential"
+      },
+      "parameters": {
+        "Ds": 2.499704475746834e-14,
+        "k": 1.1283579645016166e-11,
+        "R_contact": 88.94024372498023,
+        "C_dl": 3.148648826008564
+      },
+      "tau_R2_over_Ds_s": 1000.1182236764521,
+      "training_rmse_curves_mV": 25.982641640699338,
+      "training_rmse_rests_mV": 14.867466842032778,
+      "k_R_contact_correlation": 0.8814908639216646,
+      "converged": true,
+      "fit_time_s": 348.3434920310974
+    }
+  }
+}
