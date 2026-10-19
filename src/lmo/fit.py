@@ -45,7 +45,16 @@ N_POINTS_PER_STEP = 300
 class RateSimulator:
     """One PyBaMM simulation of the full measured protocol at one rate, parameters as inputs."""
 
-    def __init__(self, rate: str, cycle: int, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, n_cycles: int | None = None):
+    def __init__(
+        self,
+        rate: str,
+        cycle: int,
+        kind: str = "SPMe",
+        disc_mm: float = DEFAULT_DISC_MM,
+        n_cycles: int | None = None,
+        rest_period_s: float | None = None,
+        mesh: str = "v1",
+    ):
         self.rate, self.cycle, self.kind = rate, cycle, kind
         self.steps = {k: get_step(rate, cycle, k) for k in ("charge", "discharge")}
         # The run is simulated from its first cycle so that the state entering ``cycle`` carries
@@ -61,11 +70,15 @@ class RateSimulator:
             disc_mm=disc_mm,
             initial_sto=ocv_to_sto(self.start_voltage),
         )
-        self.sim = make_simulation(gcd_experiment(currents, n_cycles=self.n_cycles), params, kind, make_model(kind))
+        self.sim = make_simulation(
+            gcd_experiment(currents, n_cycles=self.n_cycles, rest_period_s=rest_period_s), params, kind, make_model(kind), mesh=mesh
+        )
 
-    def run(self, fit: dict) -> dict[str, pd.DataFrame]:
+    def run(self, fit: dict, include_rests: bool = False) -> dict[str, pd.DataFrame]:
+        """Step frames of ``cycle`` keyed by step name ("charge", "discharge" and, with
+        ``include_rests``, "rest after charge" / "rest after discharge")."""
         sol = self.sim.solve(inputs={n: float(fit[n]) for n in PARAM_NAMES})
-        frames = solution_frames(sol, self.n_cycles, self.rate)
+        frames = solution_frames(sol, self.n_cycles, self.rate, include_rests=include_rests)
         return {f["step"].iloc[0]: f for f in frames if f["cycle"].iloc[0] == self.cycle}
 
     def residual_points(self, n: int = N_POINTS_PER_STEP) -> dict[str, tuple[np.ndarray, np.ndarray]]:

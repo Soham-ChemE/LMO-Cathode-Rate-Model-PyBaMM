@@ -182,6 +182,22 @@ def default_var_pts():
     return {"x_n": 10, "x_s": 10, "x_p": 30, "r_n": 10, "r_p": 30}
 
 
+# v2: the rest relaxation right after the current switches off is set by the particle surface,
+# and a uniform 30-point radial mesh lags it by a few seconds (at the steep end of the OCV that
+# is tens of mV). v2 therefore uses 60 radial points stretched towards the surface, which agrees
+# with a 300-point uniform mesh to ~1 mV in the rests and changes the curves by < 0.1 mV.
+V2_VAR_PTS = {"x_n": 10, "x_s": 10, "x_p": 30, "r_n": 10, "r_p": 60}
+V2_PARTICLE_STRETCH = 2.5
+
+
+def v2_submesh_types(model):
+    sub = model.default_submesh_types.copy()
+    sub["positive particle"] = pybamm.MeshGenerator(
+        pybamm.Exponential1DSubMesh, submesh_params={"side": "right", "stretch": V2_PARTICLE_STRETCH}
+    )
+    return sub
+
+
 OUTPUT_VARIABLES = [
     "Time [s]",
     "Voltage [V]",
@@ -208,36 +224,44 @@ def gcd_experiment(
     v_max=4.5,
     start="charge",
     period_s: float | None = None,
+    rest_period_s: float | None = None,
 ):
     """Charge -> rest -> discharge -> rest, repeated. Currents in mA, EC-Lab style.
 
     ``current_mA`` may be a (charge, discharge) pair because the C/10 run read different
     currents in the two directions. ``period_s`` is the output interval; by default it is
-    chosen so a full step has roughly 1500 points.
+    chosen so a full step has roughly 1500 points. ``rest_period_s`` gives the rests their own,
+    finer output interval (used by the v2 fit, which compares the model's rest relaxation with
+    the measured one); by default the rests share ``period_s``, as in v1.
     """
     i_chg, i_dis = (current_mA, current_mA) if np.isscalar(current_mA) else current_mA
     if period_s is None:
         period_s = max(1.0, NOMINAL_CAPACITY_MAH / abs(i_dis) * 3600 / 1500)
+    rest = f"Rest for {rest_s} seconds"
+    if rest_period_s is not None:
+        rest = pybamm.step.string(rest, period=f"{rest_period_s} seconds")
     cyc = [
         f"Charge at {abs(i_chg)} mA until {v_max} V",
-        f"Rest for {rest_s} seconds",
+        rest,
         f"Discharge at {abs(i_dis)} mA until {v_min} V",
-        f"Rest for {rest_s} seconds",
+        rest,
     ]
     if start == "discharge":
         cyc = cyc[2:] + cyc[:2]
     return pybamm.Experiment(cyc * n_cycles, period=f"{period_s} seconds")
 
 
-def make_simulation(experiment, params, kind: str = "SPMe", model=None) -> pybamm.Simulation:
+def make_simulation(experiment, params, kind: str = "SPMe", model=None, mesh: str = "v1") -> pybamm.Simulation:
+    """``mesh="v1"`` is the uniform mesh of the v1 fit; ``"v2"`` refines the particle surface."""
     model = model or make_model(kind)
     solver = pybamm.IDAKLUSolver(rtol=1e-6, atol=1e-8)
+    extra = {} if mesh == "v1" else {"submesh_types": v2_submesh_types(model), "var_pts": V2_VAR_PTS}
     return pybamm.Simulation(
         model,
         parameter_values=params,
         experiment=experiment,
         solver=solver,
-        var_pts=default_var_pts(),
+        **{"var_pts": default_var_pts(), **extra},
     )
 
 
@@ -292,14 +316,18 @@ def simulate_gcd(
     return sol, solution_frames(sol, n_cycles, rate)
 
 
-def solution_frames(sol, n_cycles: int = 1, rate: str | None = None) -> list[pd.DataFrame]:
-    """Charge and discharge step frames of a charge/rest/discharge/rest experiment solution."""
+def solution_frames(sol, n_cycles: int = 1, rate: str | None = None, include_rests: bool = False) -> list[pd.DataFrame]:
+    """Charge and discharge step frames of a charge/rest/discharge/rest experiment solution.
+
+    With ``include_rests`` the two rests of each cycle are returned as well, labelled
+    ``step = "rest after charge"`` / ``"rest after discharge"``.
+    """
     frames = []
-    kinds = ["charge", "rest", "discharge", "rest"] * n_cycles
+    kinds = ["charge", "rest after charge", "discharge", "rest after discharge"] * n_cycles
     steps = [s for c in sol.cycles for s in c.steps]
     for i, step in enumerate(steps):
         k = kinds[i % 4]
-        if k == "rest":
+        if k.startswith("rest") and not include_rests:
             continue
         df = step_frame(step, k, rate)
         df["cycle"] = i // 4 + 1
