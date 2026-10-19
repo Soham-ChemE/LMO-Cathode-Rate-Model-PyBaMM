@@ -23,7 +23,9 @@ can represent is that jump, and this variant is reported in full (prefix ``v2_ju
 from __future__ import annotations
 
 import json
+import os
 import time
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -260,16 +262,26 @@ def rest_jumps(res: V2Residual, fit: dict) -> dict:
     return out
 
 
+def _loo_refit(args):
+    kind, disc_mm, lam, mode, best, keep, label = args
+    r, _, _ = fit_v2(kind, disc_mm, lam, x0=best, blocks=keep, verbose=False, mode=mode)
+    d = unpack(r.x)
+    d["dropped"] = label
+    return d
+
+
 def _fit_with_loo(kind, disc_mm, lam, mode, x0=None):
+    """Fit, then leave-one-block-out refits from the optimum. The refits are independent, so
+    they run in ``LMO_WORKERS`` processes (default 1); the result does not depend on that."""
     result, res, elapsed = fit_v2(kind, disc_mm, lam, x0=x0, mode=mode)
     best = unpack(result.x)
-    loo = []
-    for drop in res.blocks:
-        keep = [b for b in res.blocks if b != drop]
-        r, _, _ = fit_v2(kind, disc_mm, lam, x0=best, blocks=keep, verbose=False, mode=mode)
-        d = unpack(r.x)
-        d["dropped"] = block_label(drop)
-        loo.append(d)
+    jobs = [(kind, disc_mm, lam, mode, best, [b for b in res.blocks if b != drop], block_label(drop)) for drop in res.blocks]
+    workers = int(os.environ.get("LMO_WORKERS", "1"))
+    if workers > 1:
+        with Pool(workers) as pool:
+            loo = pool.map(_loo_refit, jobs)
+    else:
+        loo = [_loo_refit(j) for j in jobs]
     summary = summarise(result, res, elapsed, loo)
     summary["leave_one_step_out"] = loo
     return result, res, summary
