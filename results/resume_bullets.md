@@ -20,3 +20,7 @@ Every number below is read from `results/*.json`.
 - Diagnosed the model class from the rests and changed it (v2.1): adding double-layer capacitance let the same data
   fit the rests to 15 mV with a contact resistance of 89 Ω (leave-one-out 74 to 104 Ω, still above the
   model-free 72 Ω jump); the blind 2C capacity error went from +20.1 % (v1) to +27.1 % (v2.1), reported without any tuning on 2C.
+- Tested the remaining hypothesis (v3): added an electrolyte-oxidation side reaction to the PyBaMM half cell as a custom
+  submodel, constrained it with the measured excess charge, and showed that the 169 µA leak it allows reproduces the
+  91 % coulombic efficiency but cannot produce the after-charge relaxation (22 to 21 mV); documented what
+  measurement (1 kHz current interruption, EIS, three-electrode cell, measured area) would settle the rest.

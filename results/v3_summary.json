@@ -1,0 +1,644 @@
+{
+  "SPMe": {
+    "headline": {
+      "statement": "2C cycle-2 discharge capacity, never used in fitting",
+      "predicted_mAh": 1.0105275723809655,
+      "measured_mAh": 0.8229207505671382,
+      "error_pct": 22.79767786685813,
+      "abs_error_pct": 22.79767786685813,
+      "mean_voltage_error_mV": -24.3470607482541,
+      "energy_error_pct": 21.98875437474807,
+      "vq_rmse_mV": 62.24875458633622,
+      "measured_capacity_loss_vs_c10_pct": 42.43466167956329,
+      "predicted_capacity_loss_vs_c10_pct": 27.407996821565206
+    },
+    "training_rmse_mV": 25.856572105346896,
+    "parameters": {
+      "Ds": {
+        "value": 2.2251505347722235e-14,
+        "log10": -13.652640603015879,
+        "sd_log10_jacobian": 0.01990670015016822,
+        "ci95_low_jacobian": 2.0339593297393555e-14,
+        "ci95_high_jacobian": 2.4343136217141582e-14,
+        "leave_one_step_out_min": 1.1671491803030195e-14,
+        "leave_one_step_out_max": 3.1406114043987194e-14,
+        "unit": "m2/s"
+      },
+      "k": {
+        "value": 1.3537166229664624e-11,
+        "log10": -10.868472238134073,
+        "sd_log10_jacobian": 0.04151351557780555,
+        "ci95_low_jacobian": 1.1224351830906572e-11,
+        "ci95_high_jacobian": 1.6326543598265944e-11,
+        "leave_one_step_out_min": 8.454422294191623e-12,
+        "leave_one_step_out_max": 5.0489543910998565e-11,
+        "unit": "m^2.5/(mol^0.5 s) in j0 = k F sqrt(c_e c_s (c_max - c_s))"
+      },
+      "R_contact": {
+        "value": 92.89106860753147,
+        "log10": 1.9679739589782166,
+        "sd_log10_jacobian": 0.01272330586930466,
+        "ci95_low_jacobian": 87.70740858502596,
+        "ci95_high_jacobian": 98.3810919311813,
+        "leave_one_step_out_min": 70.92255729470733,
+        "leave_one_step_out_max": 107.36212510490458,
+        "unit": "Ohm"
+      },
+      "C_dl": {
+        "value": 3.354232750475582,
+        "log10": 0.5255931950440895,
+        "sd_log10_jacobian": 0.01571297317760289,
+        "ci95_low_jacobian": 3.1246096350109616,
+        "ci95_high_jacobian": 3.600730541920484,
+        "leave_one_step_out_min": 2.8346168749002008,
+        "leave_one_step_out_max": 4.388753884237977,
+        "unit": "F/m2 of particle surface (effective; absorbs the unknown real surface area)"
+      },
+      "j_ref": {
+        "value": 0.0924093023860605,
+        "log10": -1.034284308308187,
+        "sd_log10_jacobian": 0.0021277386719576893,
+        "ci95_low_jacobian": 0.09152617729602536,
+        "ci95_high_jacobian": 0.0933009486440029,
+        "leave_one_step_out_min": 0.0899543005281277,
+        "leave_one_step_out_max": 0.12215990864489303,
+        "unit": "A/m2 of particle surface at 4.5 V (effective; absorbs the unknown real surface area)"
+      },
+      "alpha_ox": {
+        "value": 0.25257709897139485,
+        "log10": -0.5976060292408195,
+        "sd_log10_jacobian": 0.0019601026734290938,
+        "ci95_low_jacobian": 0.25035263658182333,
+        "ci95_high_jacobian": 0.25482132641313515,
+        "leave_one_step_out_min": 0.24907870628540213,
+        "leave_one_step_out_max": 0.280226525398854,
+        "unit": "transfer coefficient of the oxidation; Tafel slope = 59 mV / alpha_ox per decade"
+      },
+      "tau_R2_over_Ds_s": {
+        "value": 1123.5194926962151,
+        "ci95_low_jacobian": 1026.9835314973045,
+        "ci95_high_jacobian": 1229.1297881164453,
+        "leave_one_step_out_min": 796.0233464409246,
+        "leave_one_step_out_max": 2141.9712597072994
+      }
+    },
+    "rates": {
+      "C/10": {
+        "role": "low-rate check",
+        "discharge": {
+          "capacity_mAh_model": 1.3920645913256284,
+          "capacity_mAh_measured": 1.4295421074160297,
+          "capacity_error_pct": -2.621644783737347,
+          "mean_voltage_V_model": 4.041391375552656,
+          "mean_voltage_V_measured": 4.035909934272724,
+          "mean_voltage_error_mV": 5.481441279931332,
+          "energy_mWh_model": 5.625877833595626,
+          "energy_mWh_measured": 5.76950319278152,
+          "energy_error_pct": -2.489388676751052,
+          "vq_rmse_mV": 52.181204575154084,
+          "vq_rmse_common_range_mV": 21.03423649297846,
+          "vt_rmse_mV": 52.172259582767545,
+          "v_start_model": 4.447918531225073,
+          "v_start_measured": 4.4199395
+        }
+      },
+      "C/5": {
+        "role": "training",
+        "discharge": {
+          "capacity_mAh_model": 1.4014985798995994,
+          "capacity_mAh_measured": 1.4220342778067654,
+          "capacity_error_pct": -1.4441070955644393,
+          "mean_voltage_V_model": 4.020559233353673,
+          "mean_voltage_V_measured": 4.015796640681344,
+          "mean_voltage_error_mV": 4.762592672328481,
+          "energy_mWh_model": 5.634808055947394,
+          "energy_mWh_measured": 5.71060047575013,
+          "energy_error_pct": -1.3272232950735452,
+          "vq_rmse_mV": 27.128324101401404,
+          "vq_rmse_common_range_mV": 15.298538498245568,
+          "vt_rmse_mV": 27.12806452437833,
+          "v_start_model": 4.400313610108649,
+          "v_start_measured": 4.3825502
+        }
+      },
+      "C/2": {
+        "role": "training",
+        "discharge": {
+          "capacity_mAh_model": 1.3849281272348763,
+          "capacity_mAh_measured": 1.361466455297465,
+          "capacity_error_pct": 1.7232647815979671,
+          "mean_voltage_V_model": 3.9597494995045524,
+          "mean_voltage_V_measured": 3.959631735132499,
+          "mean_voltage_error_mV": 0.11776437205313073,
+          "energy_mWh_model": 5.483968458668079,
+          "energy_mWh_measured": 5.390905782714194,
+          "energy_error_pct": 1.7262901579969694,
+          "vq_rmse_mV": 31.574082738197806,
+          "vq_rmse_common_range_mV": 31.574082738197806,
+          "vt_rmse_mV": 31.57425709072216,
+          "v_start_model": 4.248507188706235,
+          "v_start_measured": 4.2962418
+        }
+      },
+      "2C": {
+        "role": "blind prediction",
+        "discharge": {
+          "capacity_mAh_model": 1.0105275723809655,
+          "capacity_mAh_measured": 0.8229207505671382,
+          "capacity_error_pct": 22.79767786685813,
+          "mean_voltage_V_model": 3.671629817077605,
+          "mean_voltage_V_measured": 3.695976877825859,
+          "mean_voltage_error_mV": -24.3470607482541,
+          "energy_mWh_model": 3.710283165733,
+          "energy_mWh_measured": 3.041496066379244,
+          "energy_error_pct": 21.98875437474807,
+          "vq_rmse_mV": 62.24875458633622,
+          "vq_rmse_common_range_mV": 62.24875458633622,
+          "vt_rmse_mV": 62.248046217761456,
+          "v_start_model": 3.8677808814341663,
+          "v_start_measured": 4.0613427
+        }
+      }
+    },
+    "cv": {
+      "0.1 mV/s": {
+        "measured": {
+          "oxidation_peak_V": 4.3547416,
+          "oxidation_peak_mA": 1.618320446789776,
+          "reduction_peak_V": 3.8062489,
+          "reduction_peak_mA": -1.283918521290925
+        },
+        "model": {
+          "oxidation_peak_V": 4.368783146220034,
+          "oxidation_peak_mA": 1.6726276473798445,
+          "reduction_peak_V": 3.781286904804945,
+          "reduction_peak_mA": -1.4328341360191243
+        },
+        "oxidation_peak_shift_mV": 14.041546220034284,
+        "reduction_peak_shift_mV": -24.961995195055042,
+        "oxidation_peak_current_error_pct": 3.3557754706613485,
+        "reduction_peak_current_error_pct": 11.598525315957842,
+        "peak_separation_measured_mV": 548.4926999999997,
+        "peak_separation_model_mV": 587.496241415089
+      },
+      "0.2 mV/s": {
+        "measured": {
+          "oxidation_peak_V": 4.4166608,
+          "oxidation_peak_mA": 2.421871452862908,
+          "reduction_peak_V": 3.72328,
+          "reduction_peak_mA": -2.056479521418716
+        },
+        "model": {
+          "oxidation_peak_V": 4.498649188826047,
+          "oxidation_peak_mA": 2.714096718145788,
+          "reduction_peak_V": 3.6503134704686753,
+          "reduction_peak_mA": -2.396970837290584
+        },
+        "oxidation_peak_shift_mV": 81.98838882604687,
+        "reduction_peak_shift_mV": -72.96652953132465,
+        "oxidation_peak_current_error_pct": 12.066093142038504,
+        "reduction_peak_current_error_pct": 16.55700007345422,
+        "peak_separation_measured_mV": 693.3807999999999,
+        "peak_separation_model_mV": 848.3357183573714
+      },
+      "0.3 mV/s": {
+        "measured": {
+          "oxidation_peak_V": 4.4930315,
+          "oxidation_peak_mA": 3.124308136805983,
+          "reduction_peak_V": 3.6368725,
+          "reduction_peak_mA": -2.73406566786722
+        },
+        "model": {
+          "oxidation_peak_V": 4.597998832097841,
+          "oxidation_peak_mA": 3.5447262788859777,
+          "reduction_peak_V": 3.5479287705719007,
+          "reduction_peak_mA": -3.180540893302802
+        },
+        "oxidation_peak_shift_mV": 104.96733209784104,
+        "reduction_peak_shift_mV": -88.94372942809925,
+        "oxidation_peak_current_error_pct": 13.456359733767908,
+        "reduction_peak_current_error_pct": 16.330084192303506,
+        "peak_separation_measured_mV": 856.1589999999999,
+        "peak_separation_model_mV": 1050.0700615259402
+      }
+    },
+    "b_value": {
+      "measured_oxidation": {
+        "b": 0.5969302326070194,
+        "log10_intercept": 2.5955434178878236,
+        "r2": 0.9995813187730955
+      },
+      "measured_reduction": {
+        "b": 0.6871204976045844,
+        "log10_intercept": 2.856411030427321,
+        "r2": 0.9999241493393887
+      },
+      "model_oxidation": {
+        "b": 0.6852325949139682,
+        "log10_intercept": 2.965394611446328,
+        "r2": 0.9997663663942128
+      },
+      "model_reduction": {
+        "b": 0.7276006985950667,
+        "log10_intercept": 3.0677948811496494,
+        "r2": 0.9997385855336297
+      }
+    },
+    "randles_sevcik": {
+      "assumptions": "reversible planar electrode, geometric disc area, C = cycling lithium concentration",
+      "area_m2": 7.853981633974483e-05,
+      "concentration_mol_m3": 17417.756723088918,
+      "per_scan": {
+        "0.1 mV/s": {
+          "oxidation_m2_s": 1.9390820039005524e-13,
+          "reduction_m2_s": 1.2205120202867008e-13
+        },
+        "0.2 mV/s": {
+          "oxidation_m2_s": 2.1713974015334032e-13,
+          "reduction_m2_s": 1.5656183966765556e-13
+        },
+        "0.3 mV/s": {
+          "oxidation_m2_s": 2.409093180565162e-13,
+          "reduction_m2_s": 1.8448614727058764e-13
+        }
+      },
+      "apparent_D_geometric_mean_m2_s": 1.8150843169677578e-13,
+      "fitted_Ds_m2_s": 2.2251505347722235e-14,
+      "ratio_apparent_to_fitted": 8.157130444001885
+    },
+    "two_c_overpotentials": {
+      "mean_loss_mV": 375.6058111230369,
+      "shares": {
+        "contact_ohmic": 0.7082597056857216,
+        "reaction": 0.23190223276650138,
+        "particle_diffusion": 0.03253914505657894,
+        "electrolyte_concentration": 0.011238503530095515,
+        "electrolyte_ohmic": 0.015334083036155804,
+        "solid_ohmic": 0.0007263299249466671
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 266.0264612398489,
+        "reaction": 131.8855332751804,
+        "particle_diffusion": 30.5604808191395,
+        "electrolyte_concentration": 4.2359508472067,
+        "electrolyte_ohmic": 5.7593323770114,
+        "solid_ohmic": 0.2728137406024
+      },
+      "bulk_ocv_at_cutoff_V": 3.9387409381842486,
+      "capacity_locked_out_mAh": 0.11045528420782334
+    },
+    "training_rmse_rests_mV": 14.422394179268757,
+    "log10_correlation": {
+      "Ds-k": -0.3309593881088435,
+      "Ds-R_contact": -0.10841170315897661,
+      "Ds-C_dl": -0.48010256924721156,
+      "Ds-j_ref": -0.18782769043510608,
+      "Ds-alpha_ox": -0.427903502372239,
+      "k-R_contact": 0.8648702668611141,
+      "k-C_dl": 0.5860030449058244,
+      "k-j_ref": 0.8373702732860513,
+      "k-alpha_ox": 0.13176804669685982,
+      "R_contact-C_dl": 0.5652602800832621,
+      "R_contact-j_ref": 0.9478706879833463,
+      "R_contact-alpha_ox": 0.06286386142198076,
+      "C_dl-j_ref": 0.6014454551749764,
+      "C_dl-alpha_ox": 0.178820268188411,
+      "j_ref-alpha_ox": 0.32135745437380997
+    },
+    "weighting": {
+      "lambda": 1.0,
+      "rest_weight": 3.4469099377285564,
+      "rest_points": "every logged sample of each rest",
+      "n_curve_points": 1200,
+      "n_rest_points": 101,
+      "excess_lambda": 1.0,
+      "excess_tolerance_relative": 0.3,
+      "excess_weight_per_mAh": {
+        "C/10": 14.870339711314587,
+        "C/5": 61.06536039415908
+      },
+      "excess_rule": "w = sqrt(lambda_q N_curve / N_q) * 25 mV / (tolerance * measured excess): the constraint block carries the curve block's weight when each excess misses by the tolerance"
+    }
+  },
+  "DFN": {
+    "headline": {
+      "statement": "2C cycle-2 discharge capacity, never used in fitting",
+      "predicted_mAh": 1.009016907158257,
+      "measured_mAh": 0.8229207505671382,
+      "error_pct": 22.614104269805527,
+      "abs_error_pct": 22.614104269805527,
+      "mean_voltage_error_mV": -24.65751769781166,
+      "energy_error_pct": 21.796090644186595,
+      "vq_rmse_mV": 61.958249778493524,
+      "measured_capacity_loss_vs_c10_pct": 42.43466167956329,
+      "predicted_capacity_loss_vs_c10_pct": 27.51904898721058
+    },
+    "training_rmse_mV": 25.84087350305167,
+    "parameters": {
+      "Ds": {
+        "value": 2.2194038290536152e-14,
+        "log10": -13.653763669028447,
+        "sd_log10_jacobian": 0.01974872996943399,
+        "ci95_low_jacobian": 2.0301532384604106e-14,
+        "ci95_high_jacobian": 2.4262963322676812e-14,
+        "leave_one_step_out_min": 1.163937628912708e-14,
+        "leave_one_step_out_max": 3.6440811942161456e-14,
+        "unit": "m2/s"
+      },
+      "k": {
+        "value": 1.3536140081611081e-11,
+        "log10": -10.868505159893415,
+        "sd_log10_jacobian": 0.04136889061690716,
+        "ci95_low_jacobian": 1.1230828993443479e-11,
+        "ci95_high_jacobian": 1.6314653924119528e-11,
+        "leave_one_step_out_min": 7.214964011377459e-12,
+        "leave_one_step_out_max": 4.522682481783315e-11,
+        "unit": "m^2.5/(mol^0.5 s) in j0 = k F sqrt(c_e c_s (c_max - c_s))"
+      },
+      "R_contact": {
+        "value": 92.90597163698433,
+        "log10": 1.968043629662533,
+        "sd_log10_jacobian": 0.012663840744024293,
+        "ci95_low_jacobian": 87.74502495112614,
+        "ci95_high_jacobian": 98.37047252103332,
+        "leave_one_step_out_min": 70.56199155754327,
+        "leave_one_step_out_max": 106.55852518973664,
+        "unit": "Ohm"
+      },
+      "C_dl": {
+        "value": 3.3667727498417737,
+        "log10": 0.5272138034030999,
+        "sd_log10_jacobian": 0.015200178029169223,
+        "ci95_low_jacobian": 3.1435578319657145,
+        "ci95_high_jacobian": 3.6058375111836547,
+        "leave_one_step_out_min": 2.61182435889807,
+        "leave_one_step_out_max": 4.407520478672451,
+        "unit": "F/m2 of particle surface (effective; absorbs the unknown real surface area)"
+      },
+      "j_ref": {
+        "value": 0.09241522420161144,
+        "log10": -1.034256478540515,
+        "sd_log10_jacobian": 0.001986144154688079,
+        "ci95_low_jacobian": 0.09159055252182342,
+        "ci95_high_jacobian": 0.0932473211382706,
+        "leave_one_step_out_min": 0.08991411538640424,
+        "leave_one_step_out_max": 0.12176148086256232,
+        "unit": "A/m2 of particle surface at 4.5 V (effective; absorbs the unknown real surface area)"
+      },
+      "alpha_ox": {
+        "value": 0.252653607081914,
+        "log10": -0.5974744970513656,
+        "sd_log10_jacobian": 0.0019900004701536274,
+        "ci95_low_jacobian": 0.2503946826579758,
+        "ci95_high_jacobian": 0.25493291029145126,
+        "leave_one_step_out_min": 0.24946795088277987,
+        "leave_one_step_out_max": 0.2795776434200404,
+        "unit": "transfer coefficient of the oxidation; Tafel slope = 59 mV / alpha_ox per decade"
+      },
+      "tau_R2_over_Ds_s": {
+        "value": 1126.4286234317417,
+        "ci95_low_jacobian": 1030.377026397033,
+        "ci95_high_jacobian": 1231.4341364181469,
+        "leave_one_step_out_min": 686.0439893512743,
+        "leave_one_step_out_max": 2147.8814138308894
+      }
+    },
+    "rates": {
+      "C/10": {
+        "role": "low-rate check",
+        "discharge": {
+          "capacity_mAh_model": 1.392113228453934,
+          "capacity_mAh_measured": 1.4295421074160297,
+          "capacity_error_pct": -2.618242496525716,
+          "mean_voltage_V_model": 4.0413873334021275,
+          "mean_voltage_V_measured": 4.035909934272724,
+          "mean_voltage_error_mV": 5.47739912940326,
+          "energy_mWh_model": 5.626068768135271,
+          "energy_mWh_measured": 5.76950319278152,
+          "energy_error_pct": -2.4860793009995388,
+          "vq_rmse_mV": 52.136542052427835,
+          "vq_rmse_common_range_mV": 20.920157700470245,
+          "vt_rmse_mV": 52.12792999264403,
+          "v_start_model": 4.448003871164461,
+          "v_start_measured": 4.4199395
+        }
+      },
+      "C/5": {
+        "role": "training",
+        "discharge": {
+          "capacity_mAh_model": 1.4015010233531424,
+          "capacity_mAh_measured": 1.4220342778067654,
+          "capacity_error_pct": -1.4439352675303905,
+          "mean_voltage_V_model": 4.0205466856855026,
+          "mean_voltage_V_measured": 4.015796640681344,
+          "mean_voltage_error_mV": 4.75004500415821,
+          "energy_mWh_model": 5.6348002944273174,
+          "energy_mWh_measured": 5.71060047575013,
+          "energy_error_pct": -1.3273592093282611,
+          "vq_rmse_mV": 27.126356268933105,
+          "vq_rmse_common_range_mV": 15.294995337660474,
+          "vt_rmse_mV": 27.126096377921105,
+          "v_start_model": 4.400464924119833,
+          "v_start_measured": 4.3825502
+        }
+      },
+      "C/2": {
+        "role": "training",
+        "discharge": {
+          "capacity_mAh_model": 1.3848637010364024,
+          "capacity_mAh_measured": 1.361466455297465,
+          "capacity_error_pct": 1.7185326636509382,
+          "mean_voltage_V_model": 3.9597150846254774,
+          "mean_voltage_V_measured": 3.959631735132499,
+          "mean_voltage_error_mV": 0.08334949297816863,
+          "energy_mWh_model": 5.48366568714411,
+          "energy_mWh_measured": 5.390905782714194,
+          "energy_error_pct": 1.7206738193672058,
+          "vq_rmse_mV": 31.54140885444151,
+          "vq_rmse_common_range_mV": 31.54140885444151,
+          "vt_rmse_mV": 31.54158321450036,
+          "v_start_model": 4.248929068976282,
+          "v_start_measured": 4.2962418
+        }
+      },
+      "2C": {
+        "role": "blind prediction",
+        "discharge": {
+          "capacity_mAh_model": 1.009016907158257,
+          "capacity_mAh_measured": 0.8229207505671382,
+          "capacity_error_pct": 22.614104269805527,
+          "mean_voltage_V_model": 3.6713193601280474,
+          "mean_voltage_V_measured": 3.695976877825859,
+          "mean_voltage_error_mV": -24.65751769781166,
+          "energy_mWh_model": 3.7044233059466336,
+          "energy_mWh_measured": 3.041496066379244,
+          "energy_error_pct": 21.796090644186595,
+          "vq_rmse_mV": 61.958249778493524,
+          "vq_rmse_common_range_mV": 61.958249778493524,
+          "vt_rmse_mV": 61.95753884584538,
+          "v_start_model": 3.8698339489213542,
+          "v_start_measured": 4.0613427
+        }
+      }
+    },
+    "cv": {
+      "0.1 mV/s": {
+        "measured": {
+          "oxidation_peak_V": 4.3547416,
+          "oxidation_peak_mA": 1.618320446789776,
+          "reduction_peak_V": 3.8062489,
+          "reduction_peak_mA": -1.283918521290925
+        },
+        "model": {
+          "oxidation_peak_V": 4.368783018746872,
+          "oxidation_peak_mA": 1.6722806122820166,
+          "reduction_peak_V": 3.7792745011785747,
+          "reduction_peak_mA": -1.4326645394924895
+        },
+        "oxidation_peak_shift_mV": 14.04141874687248,
+        "reduction_peak_shift_mV": -26.97439882142527,
+        "oxidation_peak_current_error_pct": 3.334331318576611,
+        "reduction_peak_current_error_pct": 11.585316025506565,
+        "peak_separation_measured_mV": 548.4926999999997,
+        "peak_separation_model_mV": 589.5085175682975
+      },
+      "0.2 mV/s": {
+        "measured": {
+          "oxidation_peak_V": 4.4166608,
+          "oxidation_peak_mA": 2.421871452862908,
+          "reduction_peak_V": 3.72328,
+          "reduction_peak_mA": -2.056479521418716
+        },
+        "model": {
+          "oxidation_peak_V": 4.498648208134218,
+          "oxidation_peak_mA": 2.7132029449085158,
+          "reduction_peak_V": 3.6503135149925376,
+          "reduction_peak_mA": -2.3963260313474066
+        },
+        "oxidation_peak_shift_mV": 81.98740813421779,
+        "reduction_peak_shift_mV": -72.96648500746228,
+        "oxidation_peak_current_error_pct": 12.029188902706768,
+        "reduction_peak_current_error_pct": 16.525645229583354,
+        "peak_separation_measured_mV": 693.3807999999999,
+        "peak_separation_model_mV": 848.33469314168
+      },
+      "0.3 mV/s": {
+        "measured": {
+          "oxidation_peak_V": 4.4930315,
+          "oxidation_peak_mA": 3.124308136805983,
+          "reduction_peak_V": 3.6368725,
+          "reduction_peak_mA": -2.73406566786722
+        },
+        "model": {
+          "oxidation_peak_V": 4.597999154090313,
+          "oxidation_peak_mA": 3.5430026001418087,
+          "reduction_peak_V": 3.547929041238058,
+          "reduction_peak_mA": -3.179033632945967
+        },
+        "oxidation_peak_shift_mV": 104.96765409031283,
+        "reduction_peak_shift_mV": -88.94345876194177,
+        "oxidation_peak_current_error_pct": 13.40118979953948,
+        "reduction_peak_current_error_pct": 16.27495529124785,
+        "peak_separation_measured_mV": 856.1589999999999,
+        "peak_separation_model_mV": 1050.0701128522544
+      }
+    },
+    "b_value": {
+      "measured_oxidation": {
+        "b": 0.5969302326070194,
+        "log10_intercept": 2.5955434178878236,
+        "r2": 0.9995813187730955
+      },
+      "measured_reduction": {
+        "b": 0.6871204976045844,
+        "log10_intercept": 2.856411030427321,
+        "r2": 0.9999241493393887
+      },
+      "model_oxidation": {
+        "b": 0.6849871479575196,
+        "log10_intercept": 2.9643283584686686,
+        "r2": 0.9997637116602405
+      },
+      "model_reduction": {
+        "b": 0.7272884309164632,
+        "log10_intercept": 3.0665021029454844,
+        "r2": 0.9997349824156694
+      }
+    },
+    "randles_sevcik": {
+      "assumptions": "reversible planar electrode, geometric disc area, C = cycling lithium concentration",
+      "area_m2": 7.853981633974483e-05,
+      "concentration_mol_m3": 17417.756723088918,
+      "per_scan": {
+        "0.1 mV/s": {
+          "oxidation_m2_s": 1.9390820039005524e-13,
+          "reduction_m2_s": 1.2205120202867008e-13
+        },
+        "0.2 mV/s": {
+          "oxidation_m2_s": 2.1713974015334032e-13,
+          "reduction_m2_s": 1.5656183966765556e-13
+        },
+        "0.3 mV/s": {
+          "oxidation_m2_s": 2.409093180565162e-13,
+          "reduction_m2_s": 1.8448614727058764e-13
+        }
+      },
+      "apparent_D_geometric_mean_m2_s": 1.8150843169677578e-13,
+      "fitted_Ds_m2_s": 2.2194038290536152e-14,
+      "ratio_apparent_to_fitted": 8.178251714298137
+    },
+    "two_c_overpotentials": {
+      "mean_loss_mV": 375.80435939249116,
+      "shares": {
+        "contact_ohmic": 0.7079990816789127,
+        "reaction": 0.23194767303780023,
+        "particle_diffusion": 0.03263904558008273,
+        "electrolyte_concentration": 0.011396090502656251,
+        "electrolyte_ohmic": 0.015287799547073651,
+        "solid_ohmic": 0.0007303096534743468
+      },
+      "at_cutoff_mV": {
+        "contact_ohmic": 266.06914134081586,
+        "reaction": 132.0019466755952,
+        "particle_diffusion": 30.333283891887,
+        "electrolyte_concentration": 4.3399906479145995,
+        "electrolyte_ohmic": 5.8051523166163,
+        "solid_ohmic": 0.26897853562159996
+      },
+      "bulk_ocv_at_cutoff_V": 3.938818494592744,
+      "capacity_locked_out_mAh": 0.11067067440990086
+    },
+    "training_rmse_rests_mV": 14.428895395401243,
+    "log10_correlation": {
+      "Ds-k": -0.3229591235775424,
+      "Ds-R_contact": -0.0972336121607545,
+      "Ds-C_dl": -0.4682989288268063,
+      "Ds-j_ref": -0.12602802247100992,
+      "Ds-alpha_ox": -0.37562116074043705,
+      "k-R_contact": 0.8638079346801817,
+      "k-C_dl": 0.5805202403667609,
+      "k-j_ref": 0.8159025350725776,
+      "k-alpha_ox": 0.07710370845616876,
+      "R_contact-C_dl": 0.5584904438009565,
+      "R_contact-j_ref": 0.9348275198567838,
+      "R_contact-alpha_ox": 0.00898416673461906,
+      "C_dl-j_ref": 0.4825719194573793,
+      "C_dl-alpha_ox": 0.053654623479547275,
+      "j_ref-alpha_ox": 0.30051078290181116
+    },
+    "weighting": {
+      "lambda": 1.0,
+      "rest_weight": 3.4469099377285564,
+      "rest_points": "every logged sample of each rest",
+      "n_curve_points": 1200,
+      "n_rest_points": 101,
+      "excess_lambda": 1.0,
+      "excess_tolerance_relative": 0.3,
+      "excess_weight_per_mAh": {
+        "C/10": 14.870339711314587,
+        "C/5": 61.06536039415908
+      },
+      "excess_rule": "w = sqrt(lambda_q N_curve / N_q) * 25 mV / (tolerance * measured excess): the constraint block carries the curve block's weight when each excess misses by the tolerance"
+    }
+  }
+}

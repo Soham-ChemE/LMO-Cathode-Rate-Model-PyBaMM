@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from lmo.fit_v21 import STARTS  # noqa: E402
@@ -662,12 +664,13 @@ def v3_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
                 f"oxidation peak the measured current exceeds the intercalation-only v2.1 model by {1000 * lo['measured_minus_v2.1_mA']:.0f} µA at {lo['voltage_V']:.2f} V and "
                 f"{1000 * hi['measured_minus_v2.1_mA']:.0f} µA at {hi['voltage_V']:.2f} V, an upper bound on the parasitic current there, and the v3 model gives "
                 f"{hi['v3_mA']:.2f} mA at {hi['voltage_V']:.2f} V against {hi['measured_mA']:.2f} mA measured (v2.1: {hi['v2.1_mA']:.2f} mA). "
-                f"The fitted leak extrapolated to 4.8 V is {1000 * lk['current_mA_vs_surface_potential_V']['4.8']:.0f} µA, "
                 + (
-                    f"{lk['current_mA_vs_surface_potential_V']['4.8'] / max(hi['measured_minus_v2.1_mA'], 1e-6):.0f} times the upper bound the CV allows: a steady potential-driven oxidation with this slope is contradicted by the CV, "
-                    f"and the excess charge at C/10 must come mostly from something that does not grow with potential and fades with cycling (surface-film formation on the fresh electrode, plus the C/10 current-range offset)."
-                    if lk["current_mA_vs_surface_potential_V"]["4.8"] > 3 * max(hi["measured_minus_v2.1_mA"], 1e-6)
-                    else "consistent with the CV."
+                    f"The simulated leak there is {(hi['v3_mA'] - hi['v2.1_mA']) / max(hi['measured_minus_v2.1_mA'], 1e-6):.0f} times the upper bound the CV allows (the particle surface sits about "
+                    f"{1000 * (4.8 - np.interp(np.log10(hi['v3_mA'] - hi['v2.1_mA']), np.log10(list(lk['current_mA_vs_surface_potential_V'].values())), [float(v) for v in lk['current_mA_vs_surface_potential_V']])):.0f} mV below the terminal voltage at that current): "
+                    f"a steady potential-driven oxidation with this slope is contradicted by the CV, and the excess charge at C/10 must come mostly from something that does not grow "
+                    f"with potential and fades with cycling (surface-film formation on the fresh electrode, plus the C/10 current-range offset)."
+                    if (hi["v3_mA"] - hi["v2.1_mA"]) > 3 * max(hi["measured_minus_v2.1_mA"], 1e-6)
+                    else "The simulated leak there is consistent with the CV."
                 )
             )
 
@@ -694,6 +697,13 @@ def v3_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
         and rdis3 <= rdis21 + 1.0
     )
     v3_is_headline = bool(two_c_better and not_worse_elsewhere)
+    c10_3, c10_1 = v3["rates"]["C/10"]["discharge"], val1["rates"]["C/10"]["discharge"]
+    c10_txt = (
+        f" The C/10 curve, a check in every version, is worse in v3 (capacity {c10_3['capacity_error_pct']:+.1f} % and V-Q RMSE {c10_3['vq_rmse_mV']:.0f} mV against {c10_1['capacity_error_pct']:+.1f} % and {c10_1['vq_rmse_mV']:.0f} mV for v1), "
+        f"because the leak ends the C/10 charge with less lithium extracted and the next discharge is shorter."
+        if c10_3["vq_rmse_mV"] > c10_1["vq_rmse_mV"] + 5
+        else ""
+    )
     two_c_txt = f"the blind 2C capacity error is {e1['capacity_error_pct']:+.1f} % (v1), {cm['v2']['two_c']['capacity_error_pct']:+.1f} % (v2), {e21['capacity_error_pct']:+.1f} % (v2.1) and {e3['capacity_error_pct']:+.1f} % (v3), with 2C V-Q RMSE {e1['vq_rmse_mV']:.0f}, {cm['v2']['two_c']['vq_rmse_mV']:.0f}, {e21['vq_rmse_mV']:.0f} and {e3['vq_rmse_mV']:.0f} mV"
     if v3_is_headline:
         headline_rule = f"v3 is the first version that improves the blind 2C prediction on both counts without being worse on the training data, the C/10 check or the CVs, so it is the headline."
@@ -824,7 +834,7 @@ cannot reproduce: the fit lands between the C/10 and C/5 values. Part of the fir
 
 {val_table}
 
-{two_c_txt[0].upper() + two_c_txt[1:]}. {headline_rule} {ov_txt} {post_txt}
+{two_c_txt[0].upper() + two_c_txt[1:]}. {headline_rule}{c10_txt} {ov_txt} {post_txt}
 
 ![all versions at 2C](figures/v2_comparison_2c.png)
 
