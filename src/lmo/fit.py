@@ -93,8 +93,11 @@ class RateSimulator:
         )
         if param_hook is not None:
             param_hook(params)
+        # Cap each step at twice the longest measured step of the run (never reached by a
+        # feasible model; only a runaway side reaction would get there).
+        max_step_s = 2.0 * max(s.duration_s for cyc in range(1, self.n_cycles + 1) for s in (get_step(rate, cyc, k) for k in ("charge", "discharge")))
         self.sim = make_simulation(
-            gcd_experiment(currents, n_cycles=self.n_cycles, rest_period_s=rest_period_s),
+            gcd_experiment(currents, n_cycles=self.n_cycles, rest_period_s=rest_period_s, max_step_s=max_step_s),
             params,
             kind,
             make_model(kind, **(model_options or {})),

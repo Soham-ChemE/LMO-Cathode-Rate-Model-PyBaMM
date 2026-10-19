@@ -172,10 +172,21 @@ def build_parameters(
 
 
 def make_model(kind: str = "SPMe", **options) -> pybamm.BaseModel:
+    """PyBaMM half-cell model. Besides PyBaMM's own options, ``options`` may carry the lmo
+    option ``"positive electrode oxidation": "Tafel"`` (v3), which switches on the parasitic
+    oxidation current of :mod:`lmo.oxidation` at the positive electrode."""
+    from . import oxidation
+
     opts = {"working electrode": "positive", "contact resistance": "true"}
     opts.update(options)
+    side_reaction = opts.pop(oxidation.OPTION, "none")
     cls = {"SPMe": pybamm.lithium_ion.SPMe, "DFN": pybamm.lithium_ion.DFN, "SPM": pybamm.lithium_ion.SPM}[kind]
-    return cls(opts, name=f"{kind} half cell")
+    if side_reaction == "none":
+        return cls(opts, name=f"{kind} half cell")
+    if side_reaction != "Tafel":
+        raise ValueError(f"unknown {oxidation.OPTION!r} option {side_reaction!r}")
+    model = cls({**opts, **oxidation.PYBAMM_OPTIONS}, name=f"{kind} half cell with oxidation", build=False)
+    return oxidation.attach(model)
 
 
 def default_var_pts():
@@ -225,6 +236,7 @@ def gcd_experiment(
     start="charge",
     period_s: float | None = None,
     rest_period_s: float | None = None,
+    max_step_s: float | None = None,
 ):
     """Charge -> rest -> discharge -> rest, repeated. Currents in mA, EC-Lab style.
 
@@ -232,7 +244,10 @@ def gcd_experiment(
     currents in the two directions. ``period_s`` is the output interval; by default it is
     chosen so a full step has roughly 1500 points. ``rest_period_s`` gives the rests their own,
     finer output interval (used by the v2 fit, which compares the model's rest relaxation with
-    the measured one); by default the rests share ``period_s``, as in v1.
+    the measured one); by default the rests share ``period_s``, as in v1. ``max_step_s`` caps
+    the charge and discharge steps (v3: a parasitic current larger than the applied one would
+    otherwise charge for PyBaMM's 24 h default before the step is declared infeasible); a cap
+    well above the measured step duration changes no feasible solution.
     """
     i_chg, i_dis = (current_mA, current_mA) if np.isscalar(current_mA) else current_mA
     if period_s is None:
@@ -240,10 +255,11 @@ def gcd_experiment(
     rest = f"Rest for {rest_s} seconds"
     if rest_period_s is not None:
         rest = pybamm.step.string(rest, period=f"{rest_period_s} seconds")
+    cap = "" if max_step_s is None else f" for {max_step_s} seconds or"
     cyc = [
-        f"Charge at {abs(i_chg)} mA until {v_max} V",
+        f"Charge at {abs(i_chg)} mA{cap} until {v_max} V",
         rest,
-        f"Discharge at {abs(i_dis)} mA until {v_min} V",
+        f"Discharge at {abs(i_dis)} mA{cap} until {v_min} V",
         rest,
     ]
     if start == "discharge":
