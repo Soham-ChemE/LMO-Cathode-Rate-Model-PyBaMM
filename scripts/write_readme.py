@@ -325,7 +325,18 @@ A measured electrode area and an EIS spectrum would remove the two remaining gue
     )
     if v21:
         bullet += v21["bullet"]
-    return {"section": section, "key_bullet": key_bullet, "bullet": bullet}
+    v3 = v3_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c) if v21 else None
+    conclusions = ""
+    v3_is_headline = False
+    if v3:
+        # v2.1's "Next step" asked for the side-reaction test; v3 is that test, so the v3 section
+        # takes its place and the final conclusions close the file.
+        section = section.split("## Next step")[0] + v3["section"]
+        conclusions = v3["conclusions"]
+        key_bullet += "\n" + v3["key_bullet"]
+        bullet += v3["bullet"]
+        v3_is_headline = v3["v3_is_headline"]
+    return {"section": section, "key_bullet": key_bullet, "bullet": bullet, "conclusions": conclusions, "v3_is_headline": v3_is_headline}
 
 
 def v21_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
@@ -535,6 +546,342 @@ is the cheapest test of that explanation."""
     return {"section": section, "next_step": next_step, "key_bullet": key_bullet, "bullet": bullet}
 
 
+def v3_section(kinds, H, comp, rests, fit1, val1, fit2, val2, c):
+    """The v3 part (side reaction), the final all-versions table, the headline rule and the
+    conclusions, or None if the v3 pipeline has not been run."""
+    needed = [f"v3_fit_{H.lower()}.json", f"v3_validation_{H.lower()}.json", f"v2_1_fit_{H.lower()}.json"]
+    if not all((RESULTS / n).exists() for n in needed) or "v3" not in comp["models"][H]:
+        return None
+    f3 = load(f"v3_fit_{H.lower()}.json")
+    v3 = load(f"v3_validation_{H.lower()}.json")
+    f21 = load(f"v2_1_fit_{H.lower()}.json")
+    v21 = load(f"v2_1_validation_{H.lower()}.json")
+    cv3 = load(f"v3_cv_{H.lower()}.json") if (RESULTS / f"v3_cv_{H.lower()}.json").exists() else None
+    ov3 = load(f"v3_overpotentials_{H.lower()}.json") if (RESULTS / f"v3_overpotentials_{H.lower()}.json").exists() else None
+    post = load(f"v3_rest_posthoc_2c_{H.lower()}.json") if (RESULTS / f"v3_rest_posthoc_2c_{H.lower()}.json").exists() else None
+    spme = load("v3_fit_spme.json") if (RESULTS / "v3_fit_spme.json").exists() else f3
+    cm = comp["models"][H]
+    c3, c21, c1 = cm["v3"], cm["v2.1"], cm["v1"]
+    p3, p21, p1 = f3["parameters"], f21["parameters"], fit1["parameters"]
+    e3, e21, e1 = c3["two_c"], c21["two_c"], c1["two_c"]
+    lk = f3["leakage_current"]
+    ce = f3["coulombic_efficiency"]
+    ex = f3["excess_charge_mAh"]
+    R_free_chg = rests["after_charge_mean_ohm_c10_c5_c2"]
+    extra = [n for n in p3 if n not in ("Ds", "k", "R_contact", "tau_R2_over_Ds_s")]
+
+    # --- rest misfit, v2.1 vs v3, after charge / after discharge
+    rchg21, rdis21 = c21["rests_after_charge_mV"], c21["rests_after_discharge_mV"]
+    rchg3, rdis3 = 1000 * f3["training_rmse_rests_after_charge_V"], 1000 * f3["training_rmse_rests_after_discharge_V"]
+    rest_rows = []
+    order = [f"{r} rest after {a}" for a in ("charge", "discharge") for r in ("C/10", "C/5", "C/2")]
+    for key in order:
+        a, b = f21["rest_jumps"][key], f3["rest_jumps"][key]
+        rest_rows.append(
+            f"| {key} | {a['current_mA']:.3f} | {a['jump_measured_mV']:.0f} / {a['jump_model_mV']:.0f} / {b['jump_model_mV']:.0f} | "
+            f"{a['relaxation_30s_measured_mV']:.0f} / {a['relaxation_30s_model_mV']:.0f} / {b['relaxation_30s_model_mV']:.0f} | {a['end_of_rest_error_mV']:+.0f} / {b['end_of_rest_error_mV']:+.0f} | "
+            f"{f21['training_rmse_per_block_mV'][key]:.1f} / {f3['training_rmse_per_block_mV'][key]:.1f} |"
+        )
+    rest_table = "\n".join(["| Rest | I (mA) | Jump at 48 ms, mV (meas / v2.1 / v3) | 30 s relaxation, mV (meas / v2.1 / v3) | Error at 30 s, mV (v2.1 / v3) | Rest RMSE, mV (v2.1 / v3) |", "|---|---|---|---|---|---|"] + rest_rows)
+
+    # --- coulombic efficiency table (both cycles; cycle 1 of C/10 and C/5 is the constraint)
+    ce_rows = []
+    for key, e in ce.items():
+        ce_rows.append(
+            f"| {key} | {e['role']} | {e['charge_mAh_measured']:.3f} / {e['charge_mAh_model']:.3f} | {e['discharge_mAh_measured']:.3f} / {e['discharge_mAh_model']:.3f} | "
+            f"{1000 * e['excess_mAh_measured']:.0f} / {1000 * e['excess_mAh_model']:.0f} | {100 * e['coulombic_efficiency_measured']:.1f} / {100 * e['coulombic_efficiency_model']:.1f} |"
+        )
+    ce_table = "\n".join(["| Run | Role in v3 | Charge, mAh (meas / v3) | Discharge, mAh (meas / v3) | Excess, µAh (meas / v3) | Coulombic efficiency, % (meas / v3) |", "|---|---|---|---|---|---|"] + ce_rows)
+
+    # --- parameter table v2.1 / v3
+    def prow(name, fj, vj, extra_cols):
+        p = fj["parameters"]
+        return (
+            f"| {name} | {extra_cols} | {fmt_ci(p['tau_R2_over_Ds_s'])} | {fmt_ci(p['k'])} | {fmt_ci(p['R_contact'])} | {fmt_ci(p['C_dl'])} | "
+            f"{fj['log10_correlation']['k-R_contact']:.2f} | {vj['headline']['predicted_mAh']:.3f} ({vj['headline']['error_pct']:+.1f} %) |"
+        )
+
+    par_table = "\n".join(
+        [
+            "| Fit | Train RMSE curves / rests after charge / after discharge (mV) | τ = R²/Ds (s) | k | R_contact (Ω) | C_dl (F/m²) | k–R_contact corr. | 2C prediction (mAh) |",
+            "|---|---|---|---|---|---|---|---|",
+            prow(f"v2.1 {H}", f21, v21, f"{1000 * f21['training_rmse_curves_V']:.1f} / {rchg21:.1f} / {rdis21:.1f}"),
+            prow(f"v3 {H}", f3, v3, f"{1000 * f3['training_rmse_curves_V']:.1f} / {rchg3:.1f} / {rdis3:.1f}"),
+        ]
+    )
+    side_txt = (
+        f"j_ref = {fmt_ci(p3['j_ref'])} A/m² of particle surface at 4.5 V, i.e. {1000 * lk['current_at_reference_potential_mA']:.0f} µA per cell "
+        f"(leave-one-out {1000 * min(lk['leave_one_out_current_at_reference_potential_mA']):.0f} to {1000 * max(lk['leave_one_out_current_at_reference_potential_mA']):.0f} µA); "
+        f"alpha_ox = {fmt_ci(p3['alpha_ox'])}, i.e. a Tafel slope of {lk['tafel_slope_mV_per_decade']:.0f} mV per decade "
+        f"(leave-one-out {min(lk['leave_one_out_tafel_slope_mV_per_decade']):.0f} to {max(lk['leave_one_out_tafel_slope_mV_per_decade']):.0f} mV)"
+    )
+    at_bound = {n: (abs(p3[n]["log10"] - lo) < 0.02 or abs(p3[n]["log10"] - hi) < 0.02) for n, (lo, hi) in {"j_ref": (-6.0, 1.0), "alpha_ox": (-1.7, 0.5)}.items()}
+    bound_txt = ", ".join(n for n, b in at_bound.items() if b)
+    starts_txt = ", ".join(f"cost {t['cost']:.3f} from j_ref {t['start']['j_ref']:.0e}, α {t['start']['alpha_ox']:g} (→ {1000 * t['optimum']['j_ref'] * lk['particle_surface_area_m2'] * 1000:.0f} µA, α {t['optimum']['alpha_ox']:.2g})" for t in (spme.get("starts_tried") or []))
+
+    # --- blind validation, all versions
+    vrows = []
+    vals = {"v1": val1, "v2": val2, "v2.1": v21, "v3": v3}
+    for rate in val1["rates"]:
+        role = v3["rates"][rate]["role"] if rate != "C/10" else "curve not fitted; rests in v2 to v3, excess charge in v3"
+        ds = {ver: vals[ver]["rates"][rate]["discharge"] for ver in vals}
+        vrows.append(
+            f"| {rate} | {role} | {ds['v1']['capacity_mAh_measured']:.3f} | " + " | ".join(f"{ds[v]['capacity_mAh_model']:.3f} ({ds[v]['capacity_error_pct']:+.1f} %)" for v in vals) + " | "
+            + " | ".join(f"{ds[v]['vq_rmse_mV']:.0f}" for v in vals) + " | " + " | ".join(f"{ds[v]['mean_voltage_error_mV']:+.0f}" for v in vals) + " |"
+        )
+    val_table = "\n".join(
+        [
+            "| Rate | Role | Q meas (mAh) | Q v1 | Q v2 | Q v2.1 | Q v3 | V-Q RMSE v1 (mV) | v2 | v2.1 | v3 | V̄ error v1 (mV) | v2 | v2.1 | v3 |",
+            "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        + vrows
+    )
+
+    # --- CV table v3 and the post-hoc leak check
+    cv_txt = ""
+    if cv3:
+        b = cv3["b_value"]
+        rows = []
+        for scan, e in cv3["scans"].items():
+            m, sm = e["measured"], e["model"]
+            rows.append(f"| {scan} | {m['oxidation_peak_V']:.2f} / {sm['oxidation_peak_V']:.2f} | {m['oxidation_peak_mA']:.2f} / {sm['oxidation_peak_mA']:.2f} | {m['reduction_peak_V']:.2f} / {sm['reduction_peak_V']:.2f} | {m['reduction_peak_mA']:.2f} / {sm['reduction_peak_mA']:.2f} | {e['peak_separation_measured_mV']:.0f} / {e['peak_separation_model_mV']:.0f} |")
+        cv_table = "\n".join(["| Scan rate | Ox. peak V (meas / v3) | Ox. peak mA (meas / v3) | Red. peak V (meas / v3) | Red. peak mA (meas / v3) | ΔEp mV (meas / v3) |", "|---|---|---|---|---|---|"] + rows)
+        cv_txt = (
+            f"Cyclic voltammetry with the v3 parameters (never fitted):\n\n{cv_table}\n\n"
+            f"Largest peak shift {c3['cv_max_peak_shift_mV']:.0f} mV (v1 {c1['cv_max_peak_shift_mV']:.0f}, v2.1 {c21['cv_max_peak_shift_mV']:.0f}); b-values {b['model_oxidation']['b']:.2f} / {b['model_reduction']['b']:.2f} "
+            f"against {b['measured_oxidation']['b']:.2f} / {b['measured_reduction']['b']:.2f} measured."
+        )
+    leak_txt = ""
+    chk = c3.get("cv_leak_check")
+    if chk and chk["points"]:
+        pts = [q for q in chk["points"] if q["voltage_V"] >= 4.7 and "v3_mA" in q]
+        if pts:
+            lo, hi = pts[0], pts[-1]
+            leak_txt = (
+                f"The 0.3 mV/s sweep to 4.8 V, outside the galvanostatic window and never fitted, is a model-free check of the leak: above the LMO "
+                f"oxidation peak the measured current exceeds the intercalation-only v2.1 model by {1000 * lo['measured_minus_v2.1_mA']:.0f} µA at {lo['voltage_V']:.2f} V and "
+                f"{1000 * hi['measured_minus_v2.1_mA']:.0f} µA at {hi['voltage_V']:.2f} V, an upper bound on the parasitic current there, and the v3 model gives "
+                f"{hi['v3_mA']:.2f} mA at {hi['voltage_V']:.2f} V against {hi['measured_mA']:.2f} mA measured (v2.1: {hi['v2.1_mA']:.2f} mA). "
+                f"The fitted leak extrapolated to 4.8 V is {1000 * lk['current_mA_vs_surface_potential_V']['4.8']:.0f} µA."
+            )
+
+    # --- verdicts
+    rest_helped = rchg3 < rchg21 - 1.0
+    rest_worse_dis = rdis3 > rdis21 + 1.0
+    curves_ok = 1000 * f3["training_rmse_curves_V"] <= 1000 * f21["training_rmse_curves_V"] + 0.5
+    ce_c10 = ce["C/10 cycle 1"]
+    ce_c5 = ce["C/5 cycle 1"]
+    ce_txt = (
+        f"the model reproduces a first-cycle coulombic efficiency of {100 * ce_c10['coulombic_efficiency_model']:.1f} % at C/10 against {100 * ce_c10['coulombic_efficiency_measured']:.1f} % measured "
+        f"and {100 * ce_c5['coulombic_efficiency_model']:.1f} % at C/5 against {100 * ce_c5['coulombic_efficiency_measured']:.1f} %"
+    )
+    if rest_helped:
+        rest_verdict = f"the after-charge rest misfit drops from {rchg21:.1f} to {rchg3:.1f} mV RMSE" + (f", but the after-discharge rests get worse ({rdis21:.1f} to {rdis3:.1f} mV)" if rest_worse_dis else f" with the after-discharge rests unchanged ({rdis21:.1f} to {rdis3:.1f} mV)")
+    else:
+        rest_verdict = f"the after-charge rest misfit does not improve ({rchg21:.1f} mV RMSE in v2.1, {rchg3:.1f} mV in v3; after discharge {rdis21:.1f} to {rdis3:.1f} mV)"
+    two_c_better = cm.get("v3_two_c_improved", False)
+    not_worse_elsewhere = (
+        curves_ok
+        and abs(v3["rates"]["C/10"]["discharge"]["capacity_error_pct"]) <= abs(val1["rates"]["C/10"]["discharge"]["capacity_error_pct"]) + 0.5
+        and (cv3 is None or c3["cv_max_peak_shift_mV"] <= c1["cv_max_peak_shift_mV"] + 5)
+        and rchg3 <= rchg21 + 1.0
+        and rdis3 <= rdis21 + 1.0
+    )
+    v3_is_headline = bool(two_c_better and not_worse_elsewhere)
+    two_c_txt = f"the blind 2C capacity error is {e1['capacity_error_pct']:+.1f} % (v1), {cm['v2']['two_c']['capacity_error_pct']:+.1f} % (v2), {e21['capacity_error_pct']:+.1f} % (v2.1) and {e3['capacity_error_pct']:+.1f} % (v3), with 2C V-Q RMSE {e1['vq_rmse_mV']:.0f}, {cm['v2']['two_c']['vq_rmse_mV']:.0f}, {e21['vq_rmse_mV']:.0f} and {e3['vq_rmse_mV']:.0f} mV"
+    if v3_is_headline:
+        headline_rule = f"v3 is the first version that improves the blind 2C prediction on both counts without being worse on the training data, the C/10 check or the CVs, so it is the headline."
+    elif two_c_better:
+        headline_rule = f"v3 improves the blind 2C prediction but is worse elsewhere, so v1 stays the headline."
+    else:
+        headline_rule = f"v3 does not improve the blind 2C prediction, so v1 stays the headline."
+
+    # how the leak compares with the charging currents
+    i_ref_mA = lk["current_at_reference_potential_mA"]
+    i_c10 = ce_c10["charge_mAh_measured"] / 10.67  # ~ mA; only for the sentence below
+    leak_vs_current = f"{1000 * i_ref_mA:.0f} µA at 4.5 V, {100 * i_ref_mA / 0.147:.0f} % of the C/10 charging current and {100 * i_ref_mA / 0.717:.0f} % of the C/2 one"
+    slope_txt = (
+        f"a Tafel slope of {lk['tafel_slope_mV_per_decade']:.0f} mV per decade, i.e. the leak is nearly potential-independent over the 3.5 to 4.5 V window "
+        f"({1000 * lk['current_mA_vs_surface_potential_V']['4.0']:.0f} µA at 4.0 V against {1000 * lk['current_mA_vs_surface_potential_V']['4.5']:.0f} µA at 4.5 V)"
+        if lk["tafel_slope_mV_per_decade"] > 300
+        else f"a Tafel slope of {lk['tafel_slope_mV_per_decade']:.0f} mV per decade ({1000 * lk['current_mA_vs_surface_potential_V']['4.0']:.0f} µA at 4.0 V against {1000 * lk['current_mA_vs_surface_potential_V']['4.5']:.0f} µA at 4.5 V)"
+    )
+    why_txt = ""
+    if not rest_helped:
+        why_txt = (
+            f" The reason is arithmetic, not the optimiser: the excess charge caps the leak at tens of microamps, and at open circuit that leak is balanced by "
+            f"re-intercalation of the same few microamps, which costs only a few millivolts of charge-transfer overpotential; the {rchg21:.0f} mV the after-charge rests "
+            f"miss would need a self-discharge current of the order of the charging current itself. The side reaction therefore explains the coulombic "
+            f"efficiency and the longer measured charges, not the after-charge rests."
+        )
+
+    sh3 = ov3["two_c"]["shares"] if ov3 else None
+    ov_txt = (
+        f"At 2C the v3 model attributes {100 * sh3['contact_ohmic']:.0f} % of the mean loss to contact/ohmic resistance, {100 * sh3['reaction']:.0f} % to charge transfer and "
+        f"{100 * sh3['particle_diffusion']:.0f} % to particle diffusion (v2.1: {100 * c21['two_c_shares']['contact_ohmic']:.0f} / {100 * c21['two_c_shares']['reaction']:.0f} / {100 * c21['two_c_shares']['particle_diffusion']:.0f} %)."
+        if sh3
+        else ""
+    )
+    post_txt = ""
+    if post:
+        rc, rd = post["rests"]["2C rest after charge"], post["rests"]["2C rest after discharge"]
+        post_txt = (
+            f"Post-hoc 2C rests (never fitted): measured jumps {post['measured_2c_after_charge_ohm']:.0f} / {post['measured_2c_after_discharge_ohm']:.0f} Ω after charge / discharge, "
+            f"v3 model {rc['instantaneous_resistance_model_ohm']:.0f} / {rd['instantaneous_resistance_model_ohm']:.0f} Ω; rest RMSE {rc['rest_rmse_mV']:.0f} / {rd['rest_rmse_mV']:.0f} mV."
+        )
+
+    # --- final table of all versions
+    frows = []
+    changes = {
+        "v1": ("DFN, Butler-Volmer, one particle size", "C/5 + C/2 curves", 3),
+        "v2": ("same model", "curves + C/10, C/5, C/2 rests", 3),
+        "v2.1": ("double-layer capacitance", "curves + rests", 4),
+        "v3": ("double layer + oxidation side reaction", "curves + rests + excess charge (C/10, C/5)", 6),
+    }
+    for ver in ("v1", "v2", "v2.1", "v3"):
+        e = cm[ver]
+        chg, data, npar = changes[ver]
+        rc_ = f"{e['rests_after_charge_mV']:.0f} / {e['rests_after_discharge_mV']:.0f}" if "rests_after_charge_mV" in e else "–"
+        cef = e["coulombic_efficiency"]["C/10"]
+        frows.append(
+            f"| {ver}{' (headline)' if (ver == 'v3' and v3_is_headline) or (ver == 'v1' and not v3_is_headline) else ''} | {chg} | {data} | {npar} | {e['training_rmse_curves_mV']:.1f} | {rc_} | "
+            f"{e['parameters']['R_contact']:.0f} | {100 * cef['model']:.1f} / {100 * cef['measured']:.1f} | {e['two_c']['capacity_mAh']:.3f} ({e['two_c']['capacity_error_pct']:+.1f} %) | "
+            f"{e['two_c']['vq_rmse_mV']:.0f} | {e['two_c']['mean_voltage_error_mV']:+.0f} | {e.get('cv_max_peak_shift_mV', float('nan')):.0f} |"
+        )
+    final_table = "\n".join(
+        [
+            f"| Version | Model | Training data | Fitted parameters | Curves RMSE (mV) | Rests RMSE after charge / discharge (mV) | R_contact (Ω) | C/10 coulombic eff., % (model / meas) | Blind 2C capacity (mAh) | 2C V-Q RMSE (mV) | 2C mean-V error (mV) | Largest CV peak shift (mV) |",
+            "|---|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        + frows
+    )
+
+    section = f"""## v3: one parasitic oxidation reaction at the positive electrode
+
+v2.1 left two things open: the first 48 ms that no sample resolves, and the slow tail of the rests that start at the
+4.5 V charge cut-off (the rests that start at 3.5 V are matched). The second has a candidate already in this data: the
+cell loses charge to a side reaction near 4.5 V (first-cycle coulombic efficiency {100 * _ce_c10():.0f} % at C/10, measured charge
+capacities longer than discharge capacities at every rate), and a parasitic current that keeps flowing at open circuit
+would be balanced by lithium re-intercalation, i.e. self-discharge, which pulls the voltage down. Electrolyte oxidation on
+charged LiMn2O4 is the textbook source of such a current: carbonate electrolytes oxidise on the delithiated spinel
+above about 4.3 V, and the self-discharge of Li/LixMn2O4 cells at the 4 V plateaus proceeds by lithium re-intercalation
+from the electrolyte. v3 adds exactly one such reaction to the v2.1 model and asks whether it explains the after-charge
+rests.
+
+**Model.** One anodic Tafel reaction on the LMO particle surface, in parallel with the intercalation reaction:
+j_ox = j_ref · exp(α_ox F (φ_s − φ_e − 4.5 V) / RT), with two fitted parameters, j_ref (the parasitic current density at
+4.5 V) and α_ox (the Tafel slope is 59 mV / α_ox per decade); a free onset potential would be degenerate with j_ref. The
+reaction consumes nothing the model tracks, so its only effects are that part of the charging current never enters the
+particles and that at open circuit the oxidation is balanced by re-intercalation. In PyBaMM the second interfacial
+reaction is carried by the SEI machinery, which since v24.1 runs on the positive electrode through a 2-tuple `SEI`
+option; because all of PyBaMM's built-in SEI kinetics are cathodic, `src/lmo/oxidation.py` subclasses `SEIGrowth` and
+replaces its rate with the anodic law above (the lithium-metal counter electrode gets no side reaction, and the SEI
+"concentration" state is kept only as a counter of the parasitic charge). Everything else is v2.1: double layer, same
+disc, same mesh.
+
+**Training data.** Exactly the v2.1 data (C/5 and C/2 cycle-1 curves, the six C/10, C/5 and C/2 cycle-1 rests at λ = 1)
+plus two constraint residuals: the model's charge-minus-discharge capacity of C/10 cycle 1 and of C/5 cycle 1 against
+the measured excess charge ({1000 * ex['C/10']['measured']:.0f} and {1000 * ex['C/5']['measured']:.0f} µAh), weighted so that the two together carry the curve block's weight when
+each misses by {100 * f3['weighting']['excess_tolerance_relative']:.0f} % (the C/10 run read its current on a coarse range, ±2.5 %, which alone is ±40 µAh on its excess). 2C is
+never used. The SPMe was fitted from {len(spme.get('starts_tried') or [])} starting points (the v2.1 optimum with a strong leak at a conventional Tafel slope, a weak
+leak, and a nearly potential-independent leak: {starts_txt}), the lowest cost kept; the {H} runs once from the SPMe optimum. Leave-one-out drops one of the {len(f3['leave_one_step_out'])} residual blocks
+(4 curve steps, 6 rests, 2 excess-charge constraints) in turn.
+
+### v3 fit
+
+{par_table}
+
+Side reaction: {side_txt}.{(' The parameter ' + bound_txt + ' sits at the bound of its search box.') if bound_txt else ''} The fit chose {slope_txt}; that is {leak_vs_current}.
+
+![v3 side reaction](figures/v3_side_reaction.png)
+
+{rest_table}
+
+**Rests:** {rest_verdict}.{why_txt}
+
+**Coulombic efficiency:** {ce_txt}. Both cycles of every low-rate run, with the model's own charge and discharge capacities:
+
+{ce_table}
+
+The measured excess falls from cycle 1 to cycle 2 at every rate and is not proportional to the time spent at high voltage
+(C/2 cycle 1 loses almost as much as C/5 cycle 1 in less than half the time), which a steady potential-dependent leak
+cannot reproduce: the fit lands between the C/10 and C/5 values. Part of the first-cycle excess is therefore a one-off
+(surface-film formation on the fresh electrode, and the C/10 current-range offset), not a steady leak.
+
+{leak_txt}
+
+### Blind validation, all versions ({H})
+
+{val_table}
+
+{two_c_txt[0].upper() + two_c_txt[1:]}. {headline_rule} {ov_txt} {post_txt}
+
+![all versions at 2C](figures/v2_comparison_2c.png)
+
+{cv_txt}
+
+![v3 rests](figures/v3_fit_rests_{H.lower()}.png)
+
+### Final comparison of all versions ({H})
+
+{final_table}
+
+Curves RMSE is on the C/5 and C/2 cycle-1 curves (training in every version); rest RMSE on the six cycle-1 rests (training
+from v2 on); the C/10 coulombic efficiency is cycle 1 (the constraint in v3, a free prediction before); 2C is blind in every
+version; the CV peak shift is the largest of the six peaks at three scan rates, never fitted."""
+
+    conclusions = f"""## Conclusions
+
+What was learned, in the order it was learned:
+
+- **v1.** Three effective parameters fitted to the C/5 and C/2 curves reproduce the training curves to {1000 * fit1['training_rmse_V']:.0f} mV, the
+  C/10 curve to {abs(val1['rates']['C/10']['discharge']['capacity_error_pct']):.1f} % in capacity and the CV peaks to {c1['cv_max_peak_shift_mV']:.0f} mV, but over-predict the blind 2C capacity by
+  {e1['capacity_error_pct']:+.1f} %, because curves alone cannot separate an instantaneous ohmic drop from a transport loss that grows with time
+  (k–R_contact correlation {fit1['log10_correlation']['k-R_contact']:.2f}).
+- **v2.** The 30 s rests after every step are the data that should separate the two, and model-free they say the instantaneous
+  resistance is about {R_free_chg:.0f} Ω, not {p1['R_contact']['value']:.0f} Ω. The v1 model class cannot use them: its relaxation is one √t tail, while the
+  measured relaxation is linear in log(t), so the fit moved the resistance the wrong way and the 2C error changed sign
+  ({cm['v2']['two_c']['capacity_error_pct']:+.1f} %) for the wrong reason.
+- **v2.1.** One model change, the double-layer capacitance, lets the same data fit the rests to {1000 * f21['training_rmse_rests_V']:.0f} mV with R_contact
+  {p21['R_contact']['value']:.0f} Ω (leave-one-out {p21['R_contact']['leave_one_step_out_min']:.0f} to {p21['R_contact']['leave_one_step_out_max']:.0f} Ω), but the blind 2C capacity is still over-predicted ({e21['capacity_error_pct']:+.1f} %), and what the model
+  still misses is specific: the slow tail of the rests that start at the 4.5 V cut-off.
+- **v3.** One parasitic oxidation reaction, constrained by the measured excess charge, {'does explain' if rest_helped else 'does not explain'} that tail. The leak the
+  excess charge allows is {1000 * i_ref_mA:.0f} µA at 4.5 V with a {lk['tafel_slope_mV_per_decade']:.0f} mV/decade slope; it reproduces the coulombic efficiency
+  ({100 * ce_c10['coulombic_efficiency_model']:.1f} % against {100 * ce_c10['coulombic_efficiency_measured']:.1f} % at C/10) {'and' if rest_helped else 'but'} {'moves' if rest_helped else 'leaves'} the after-charge rest misfit {'from ' + format(rchg21, '.0f') + ' to ' + format(rchg3, '.0f') + ' mV' if rest_helped else 'at ' + format(rchg3, '.0f') + ' mV'}, and the blind 2C capacity error is {e3['capacity_error_pct']:+.1f} %.
+  {headline_rule}
+
+The after-charge rests and the 2C capacity are therefore still unexplained by anything in this model family, and the
+remaining candidates are all things this data set cannot separate: a distributed (transmission-line or size-distribution)
+relaxation at the charged end of the OCV, a lithium-metal interphase whose resistance and relaxation are folded into the
+positive electrode's, and an electrode area that is not known. Four measurements would settle them:
+
+1. **Fast current interruption.** The same protocol logged at 1 kHz for the first second of every rest, or a GITT/ICI
+   programme, separates the ohmic drop (< 2 ms) from the double-layer relaxation (2 ms to 1 s) and the diffusion tail;
+   the present 48 ms first sample mixes the first two, which is why R_contact is only known to {p21['R_contact']['leave_one_step_out_min']:.0f} to {p21['R_contact']['leave_one_step_out_max']:.0f} Ω.
+2. **Impedance spectroscopy** at the 3.5 V and 4.5 V rest states gives C_dl, the charge-transfer resistance at each end of
+   the OCV, and the lithium-metal interphase resistance directly, instead of as fitted effective values; the comparison of
+   the two states says whether the after-charge tail is interfacial or diffusive.
+3. **A three-electrode cell** (lithium reference) removes the lithium-metal counter electrode from the measured voltage,
+   so the rests and the 2C polarisation can be attributed to the LMO electrode alone.
+4. **The electrode area and particle size** (weigh and measure the disc; SEM for the size distribution) would fix the
+   active volume fraction, the real surface area behind k, C_dl and j_ref, and the width of the size distribution that the
+   v2.1 variant table left as a free parameter."""
+
+    key_bullet = (
+        f"- **v3, one side reaction (electrolyte oxidation), v2.1 data plus the measured excess charge:** the leak the excess charge allows "
+        f"({1000 * i_ref_mA:.0f} µA at 4.5 V, {lk['tafel_slope_mV_per_decade']:.0f} mV/decade) reproduces the C/10 coulombic efficiency ({100 * ce_c10['coulombic_efficiency_model']:.0f} % against "
+        f"{100 * ce_c10['coulombic_efficiency_measured']:.0f} % measured) but {'does' if rest_helped else 'does not'} fix the after-charge rests ({rchg21:.0f} to {rchg3:.0f} mV RMSE); blind 2C capacity error "
+        f"{e3['capacity_error_pct']:+.1f} % against {e1['capacity_error_pct']:+.1f} % for v1 (2C V-Q RMSE {e3['vq_rmse_mV']:.0f} against {e1['vq_rmse_mV']:.0f} mV). {headline_rule}"
+    )
+    bullet = (
+        f"- Tested the remaining hypothesis (v3): added an electrolyte-oxidation side reaction to the PyBaMM half cell as a custom\n"
+        f"  submodel, constrained it with the measured excess charge, and showed that the {1000 * i_ref_mA:.0f} µA leak it allows reproduces the\n"
+        f"  {100 * ce_c10['coulombic_efficiency_measured']:.0f} % coulombic efficiency but {'does' if rest_helped else 'cannot'} {'fix' if rest_helped else 'produce'} the after-charge relaxation ({rchg21:.0f} to {rchg3:.0f} mV); documented what\n"
+        f"  measurement (1 kHz current interruption, EIS, three-electrode cell, measured area) would settle the rest.\n"
+    )
+    return {"section": section, "conclusions": conclusions, "key_bullet": key_bullet, "bullet": bullet, "v3_is_headline": v3_is_headline}
+
+
 def ov_two_c_v1(H):
     return load(f"overpotentials_{H.lower()}.json")["two_c"]
 
@@ -646,6 +993,27 @@ def main(headline_kind="DFN"):
             f"so the two model fidelities agree on the 2C result to within {max(abs(val[o]['headline']['error_pct'] - h['error_pct']), 0.1):.1f} percentage points."
         )
 
+    headline_bullets = f"""- **Training (C/5, C/2):** voltage RMSE {1000 * fit[H]['training_rmse_V']:.0f} mV with three fitted parameters; C/10, not used in the fit,
+  reproduced to {abs(c10['capacity_error_pct']):.1f} % in capacity.
+- **Blind 2C prediction:** average discharge voltage within {abs(h['mean_voltage_error_mV']):.0f} mV of measured; discharge capacity
+  {h['predicted_mAh']:.3f} mAh against {h['measured_mAh']:.3f} mAh measured ({h['error_pct']:+.1f} %). The model predicts a
+  {h['predicted_capacity_loss_vs_c10_pct']:.0f} % capacity loss from C/10 to 2C; the cell lost {h['measured_capacity_loss_vs_c10_pct']:.0f} %.{other_txt}
+- **Cyclic voltammetry, a technique never used in the fit:** peak potentials at all three scan rates within
+  {max(abs(e['oxidation_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (oxidation) and {max(abs(e['reduction_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (reduction); b-values {b['measured_oxidation']['b']:.2f} / {b['measured_reduction']['b']:.2f} measured vs {b['model_oxidation']['b']:.2f} / {b['model_reduction']['b']:.2f} model.
+- **Diagnosis:** at 2C the model assigns {100 * shares['contact_ohmic']:.0f} % of the voltage loss to ohmic/contact resistance; the shape of
+  the measured 2C curve says the real cell has a transport loss that grows with time, which the fit could not
+  separate from resistance (see "Why 2C loses capacity")."""
+    headline_intro = "The headline model is v1 (three parameters fitted to the C/5 and C/2 curves); v2 to v3 below are the later versions, each reported as it came out:" if v2 and v2.get("conclusions") else ""
+    if v2 and v2.get("v3_is_headline"):
+        v3f, v3v, v3c = load(f"v3_fit_{H.lower()}.json"), load(f"v3_validation_{H.lower()}.json"), load(f"v3_cv_{H.lower()}.json")
+        h3 = v3v["headline"]
+        headline_intro = "The headline model is v3 (double layer plus one oxidation side reaction, fitted to the C/5 and C/2 curves, the rests and the excess charge), the only later version that improved the blind 2C test without being worse elsewhere; the v1 numbers follow for the record:"
+        headline_bullets = (
+            f"- **v3 training (C/5, C/2 curves, six rests, excess charge):** curves {1000 * v3f['training_rmse_curves_V']:.0f} mV RMSE, rests {1000 * v3f['training_rmse_rests_V']:.0f} mV, with six fitted parameters.\n"
+            f"- **v3 blind 2C prediction:** discharge capacity {h3['predicted_mAh']:.3f} mAh against {h3['measured_mAh']:.3f} mAh measured ({h3['error_pct']:+.1f} %), 2C V-Q RMSE {h3['vq_rmse_mV']:.0f} mV, mean voltage within {abs(h3['mean_voltage_error_mV']):.0f} mV.\n"
+            f"- **v3 cyclic voltammetry (never fitted):** peak potentials within {max(max(abs(e['oxidation_peak_shift_mV']), abs(e['reduction_peak_shift_mV'])) for e in v3c['scans'].values()):.0f} mV.\n"
+            + headline_bullets.replace("- **Training", "- **v1 training").replace("- **Blind 2C", "- **v1 blind 2C").replace("- **Cyclic", "- **v1 cyclic").replace("- **Diagnosis", "- **v1 diagnosis")
+        )
     readme = f"""# LiMn2O4 half cell: a physics-based rate model fitted to my own data
 
 A PyBaMM Doyle-Fuller-Newman (DFN) half-cell model of a commercial LiMn2O4 (LMO) cathode against lithium
@@ -656,20 +1024,15 @@ see `data/README.md`).
 
 ## Key results
 
-- **Training (C/5, C/2):** voltage RMSE {1000 * fit[H]['training_rmse_V']:.0f} mV with three fitted parameters; C/10, not used in the fit,
-  reproduced to {abs(c10['capacity_error_pct']):.1f} % in capacity.
-- **Blind 2C prediction:** average discharge voltage within {abs(h['mean_voltage_error_mV']):.0f} mV of measured; discharge capacity
-  {h['predicted_mAh']:.3f} mAh against {h['measured_mAh']:.3f} mAh measured ({h['error_pct']:+.1f} %). The model predicts a
-  {h['predicted_capacity_loss_vs_c10_pct']:.0f} % capacity loss from C/10 to 2C; the cell lost {h['measured_capacity_loss_vs_c10_pct']:.0f} %.{other_txt}
-- **Cyclic voltammetry, a technique never used in the fit:** peak potentials at all three scan rates within
-  {max(abs(e['oxidation_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (oxidation) and {max(abs(e['reduction_peak_shift_mV']) for e in cv[H]['scans'].values()):.0f} mV (reduction); b-values {b['measured_oxidation']['b']:.2f} / {b['measured_reduction']['b']:.2f} measured vs {b['model_oxidation']['b']:.2f} / {b['model_reduction']['b']:.2f} model.
-- **Diagnosis:** at 2C the model assigns {100 * shares['contact_ohmic']:.0f} % of the voltage loss to ohmic/contact resistance; the shape of
-  the measured 2C curve says the real cell has a transport loss that grows with time, which the fit could not
-  separate from resistance (see "Why 2C loses capacity").
-{v2['key_bullet'] if v2 else ''}
-![Measured vs model at all four rates](figures/headline_measured_vs_model.png)
+{headline_intro}
 
-*Solid: measured. Dashed: {H}. C/5 and C/2 were used for fitting; C/10 is a low-rate check; 2C is a blind prediction.*
+{headline_bullets}
+{v2['key_bullet'] if v2 else ''}
+{'The final comparison table of all versions is at the end of the v3 section, and the Conclusions section says what was learned and what experiments would settle the rest.' if v2 and v2.get('conclusions') else ''}
+
+![Measured vs model at all four rates](figures/{'v3_' if v2 and v2.get('v3_is_headline') else ''}headline_measured_vs_model.png)
+
+*Solid: measured. Dashed: {H}{' (v3)' if v2 and v2.get('v3_is_headline') else ''}. C/5 and C/2 were used for fitting; C/10 is a low-rate check; 2C is a blind prediction.*
 
 ## Results
 
@@ -779,10 +1142,15 @@ diameter that gives a physically plausible coating.
    resolved. v2 writes `results/v2_*.json`, `data/processed/v2_*.csv` and `figures/v2_*.png`; the v1 files are
    untouched. v2.1 (`src/lmo/fit_v21.py`) refits the same data with PyBaMM's double-layer and particle-size-distribution
    options (`results/v2_1_*.json`, `figures/v2_1_*.png`). 2C is never fitted in any version.
-8. **Reproduce**: `pip install -r requirements.txt && pip install -e . && make all` regenerates
+8. **v3, side reaction** (`src/lmo/oxidation.py`, `src/lmo/fit_v3.py`): a custom PyBaMM submodel adds an anodic
+   Tafel current on the positive particle surface (the SEI machinery on the positive electrode with the kinetics
+   replaced); the fit adds the measured excess charge of C/10 and C/5 cycle 1 as constraints
+   (`tests/test_fit_v3.py` checks the sign and potential dependence of the current and the residual's blocks).
+   Outputs are `results/v3_*.json`, `data/processed/v3_*.csv` and `figures/v3_*.png`.
+9. **Reproduce**: `pip install -r requirements.txt && pip install -e . && make all` regenerates
    `data/processed/`, `results/*.json`, `figures/*.png` and this README (`python scripts/write_readme.py`).
-   `make test` runs the parser tests. `python scripts/run_all.py --fast` skips the DFN; `--v1-only` and `--v2-only`
-   run one version.
+   `make test` runs the tests. `python scripts/run_all.py --fast` skips the DFN; `--v1-only`, `--v2-only` and
+   `--v3-only` run one version.
 
 ## Assumptions and limitations
 
@@ -803,7 +1171,8 @@ diameter that gives a physically plausible coating.
 - The pseudo-OCV is a C/10 average, not a true equilibrium curve, and is linearly extrapolated outside the
   3.5 to 4.5 V window, so the parts of the CVs below 3.5 V and above 4.5 V (the 0.3 mV/s sweep went to 4.8 V)
   are outside the model's validity.
-- The model has no parasitic reactions, so measured charge capacities at low rate exceed the model's.
+- v1 to v2.1 have no parasitic reactions, so their charge capacities at low rate fall short of the measured ones; v3
+  adds one steady oxidation current, which cannot reproduce the fall of the excess charge from cycle 1 to cycle 2.
 - Jacobian confidence intervals are lower bounds on the real uncertainty (autocorrelated residuals); the
   leave-one-step-out ranges are reported alongside.
 - The 2C over-prediction is reported as measured. Nothing was tuned on the 2C or CV data.
@@ -817,8 +1186,11 @@ scripts/run_all.py   regenerates everything                scripts/write_readme.
 tests/test_io.py     parser tests vs the report values     tests/test_rests.py  rest parser tests
 results/*.json       every v1 number quoted here           figures/*.png    300 dpi
 results/v2_*.json    every v2 number quoted here           figures/v2_*.png v2 figures
+results/v3_*.json    every v3 number quoted here           figures/v3_*.png v3 figures
 results/resume_bullets.md                                  notebooks/walkthrough.ipynb
 ```
+
+{v2['conclusions'] if v2 and v2.get('conclusions') else ''}
 """
     (ROOT / "README.md").write_text(readme)
 
