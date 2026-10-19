@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from multiprocessing import Pool
+import multiprocessing
 
 import numpy as np
 import pybamm
@@ -201,7 +201,8 @@ def fit_with_loo(variant: str, kind: str, disc_mm: float = DEFAULT_DISC_MM, x0: 
     jobs = [(variant, kind, disc_mm, best, [b for b in res.blocks if b != drop], block_label(drop)) for drop in res.blocks]
     workers = int(os.environ.get("LMO_WORKERS", "1"))
     if workers > 1:
-        with Pool(workers) as pool:
+        # "spawn": a forked worker can deadlock on the solver's threads; a fresh interpreter cannot.
+        with multiprocessing.get_context("spawn").Pool(workers) as pool:
             loo = pool.map(_loo_refit, jobs)
     else:
         loo = [_loo_refit(j) for j in jobs]
