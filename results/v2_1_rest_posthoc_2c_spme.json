@@ -1,0 +1,34 @@
+{
+  "model": "SPMe",
+  "version": "v2.1",
+  "post_hoc_only": true,
+  "note": "2C rests were never used in fitting; comparison made after the fit",
+  "rests": {
+    "2C rest after charge": {
+      "cycle": 2,
+      "current_mA": 2.870534015692058,
+      "jump_measured_mV": 209.1213000000005,
+      "jump_model_mV": 294.08399383585237,
+      "instantaneous_resistance_measured_ohm": 72.8510092048442,
+      "instantaneous_resistance_model_ohm": 102.4492279931933,
+      "relaxation_30s_measured_mV": 296.176,
+      "relaxation_30s_model_mV": 357.5856257729724,
+      "rest_rmse_mV": 84.64180296506056
+    },
+    "2C rest after discharge": {
+      "cycle": 2,
+      "current_mA": 2.864233357761147,
+      "jump_measured_mV": 260.6220000000001,
+      "jump_model_mV": 292.8872530710378,
+      "instantaneous_resistance_measured_ohm": 90.99188768743257,
+      "instantaneous_resistance_model_ohm": 102.25677048184917,
+      "relaxation_30s_measured_mV": 382.13439999999997,
+      "relaxation_30s_model_mV": 428.5191158003556,
+      "rest_rmse_mV": 54.84717431283302
+    }
+  },
+  "fitted_R_contact_ohm": 88.94024372498023,
+  "v2_R_contact_ohm": 88.94024372498023,
+  "measured_2c_after_charge_ohm": 72.8510092048442,
+  "measured_2c_after_discharge_ohm": 90.99188768743257
+}
