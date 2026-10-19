@@ -49,6 +49,9 @@ EXTRA_DEFAULT = {"C_dl": 1.0, "sd_p": 0.5}
 R_MIN_REL, R_MAX_REL = 0.02, 4.0  # particle-size axis, relative to the mean radius
 N_SIZES = 20
 PREFIX = "v2_1_"
+# The variant carried through validation. Chosen on the training data alone (curve and rest
+# RMSE of the three variants, results/v2_1_variants_<model>.json), never on 2C.
+HEADLINE_VARIANT = "dl"
 
 
 def lognormal_area_weighted(R, R_av, sd_rel):
@@ -175,33 +178,57 @@ def summarise(result, res: V2Residual, variant: str, elapsed: float, loo=None) -
     return out
 
 
-def run(variant: str, kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, leave_one_out: bool = True, x0: dict | None = None) -> dict:
+def fit_with_loo(variant: str, kind: str, disc_mm: float = DEFAULT_DISC_MM, x0: dict | None = None):
     result, res, elapsed = fit_variant(variant, kind, disc_mm, x0=x0)
     best = res.unpack(result.x)
-    loo = []
-    if leave_one_out:
-        jobs = [(variant, kind, disc_mm, best, [b for b in res.blocks if b != drop], block_label(drop)) for drop in res.blocks]
-        workers = int(os.environ.get("LMO_WORKERS", "1"))
-        if workers > 1:
-            with Pool(workers) as pool:
-                loo = pool.map(_loo_refit, jobs)
-        else:
-            loo = [_loo_refit(j) for j in jobs]
+    jobs = [(variant, kind, disc_mm, best, [b for b in res.blocks if b != drop], block_label(drop)) for drop in res.blocks]
+    workers = int(os.environ.get("LMO_WORKERS", "1"))
+    if workers > 1:
+        with Pool(workers) as pool:
+            loo = pool.map(_loo_refit, jobs)
+    else:
+        loo = [_loo_refit(j) for j in jobs]
     summary = summarise(result, res, variant, elapsed, loo)
     summary["leave_one_step_out"] = loo
+    return result, res, summary
+
+
+def run(kind: str = "SPMe", disc_mm: float = DEFAULT_DISC_MM, variants=tuple(VARIANTS), headline: str = HEADLINE_VARIANT, x0: dict | None = None) -> dict:
+    """Fit every variant (training data only) for the variant table, then the headline variant
+    with leave-one-block-out refits; writes v2_1_variants_<model>.json and v2_1_fit_<model>.json."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    tag = variant.replace("+", "_")
-    with open(RESULTS_DIR / f"{PREFIX}{tag}_fit_{kind.lower()}.json", "w") as f:
-        json.dump(summary, f, indent=2)
-    res.rest_frames(best).to_csv(PROCESSED_DIR / f"{PREFIX}{tag}_model_rests_{kind.lower()}.csv", index=False)
-    return summary
+    table = {"model": kind, "headline_variant": headline, "chosen_on": "training curves and rests only (never 2C)", "variants": {}}
+    headline_summary = None
+    for variant in variants:
+        if variant == headline:
+            result, res, summary = fit_with_loo(variant, kind, disc_mm, x0=x0)
+            headline_summary = summary
+            with open(RESULTS_DIR / f"{PREFIX}fit_{kind.lower()}.json", "w") as f:
+                json.dump(summary, f, indent=2)
+            res.rest_frames(res.unpack(result.x)).to_csv(PROCESSED_DIR / f"{PREFIX}model_rests_{kind.lower()}.csv", index=False)
+        else:
+            result, res, elapsed = fit_variant(variant, kind, disc_mm, x0=x0, verbose=False)
+            summary = summarise(result, res, variant, elapsed)
+        table["variants"][variant] = {
+            "model_options": VARIANTS[variant]["options"],
+            "parameters": {n: summary["parameters"][n]["value"] for n in res.param_names},
+            "tau_R2_over_Ds_s": summary["parameters"]["tau_R2_over_Ds_s"]["value"],
+            "training_rmse_curves_mV": 1000 * summary["training_rmse_curves_V"],
+            "training_rmse_rests_mV": 1000 * summary["training_rmse_rests_V"],
+            "k_R_contact_correlation": summary["log10_correlation"]["k-R_contact"],
+            "converged": summary["converged"],
+            "fit_time_s": summary["fit_time_s"],
+        }
+        with open(RESULTS_DIR / f"{PREFIX}variants_{kind.lower()}.json", "w") as f:
+            json.dump(table, f, indent=2)
+    headline_summary["variants"] = table["variants"]
+    return headline_summary
 
 
 if __name__ == "__main__":
     import sys
 
-    variant = sys.argv[1] if len(sys.argv) > 1 else "psd+dl"
-    kind = sys.argv[2] if len(sys.argv) > 2 else "SPMe"
-    out = run(variant, kind, leave_one_out="--no-loo" not in sys.argv)
+    kind = sys.argv[1] if len(sys.argv) > 1 else "SPMe"
+    out = run(kind)
     print(json.dumps({k: out[k] for k in ("parameters", "log10_correlation", "training_rmse_curves_V", "training_rmse_rests_V")}, indent=2))

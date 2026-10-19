@@ -48,7 +48,7 @@ def fig_headline(kind: str = "DFN", prefix: str = ""):
     axes[0].set_ylim(3.4, 4.6)
     axes[0].legend(fontsize=7.5, ncol=2, loc="lower left")
     h = val["headline"]
-    trained = "C/5 and C/2 curves plus the C/10, C/5, C/2 rests (v2)" if prefix else "C/5 and C/2 only"
+    trained = {"": "C/5 and C/2 only", "v2_": "C/5 and C/2 curves plus the C/10, C/5, C/2 rests (v2)", "v2_1_": "curves plus rests with the v2.1 model"}.get(prefix, prefix)
     fig.suptitle(
         f"LiMn$_2$O$_4$ half cell: measured vs {kind} fitted on {trained}. "
         f"2C prediction: {h['predicted_mAh']:.3f} mAh vs {h['measured_mAh']:.3f} measured ({h['error_pct']:+.1f}%)",

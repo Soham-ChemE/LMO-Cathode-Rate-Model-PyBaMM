@@ -18,7 +18,7 @@ from .fit import RateSimulator
 from .fit_v2 import REST_KINDS, REST_PERIOD_S, REST_TRAINING, WEIGHTINGS, rest_key
 from .io import all_rests, get_rest, get_step, rest_summary
 from .plotting import COLORS, MEASURED_STYLE, MODEL_STYLE, savefig
-from .validate import load_fit
+from .validate import load_fit, load_fit_all
 
 TRAINED_RATES = [r for r, _ in REST_TRAINING]
 
@@ -83,12 +83,14 @@ def _v1_R_contact(kind: str = "DFN"):
 # ------------------------------------------------------- 5. post-hoc 2C rests (not fitted)
 
 
-def posthoc_2c_rests(kind: str = "SPMe", fit: dict | None = None, save: bool = True) -> dict:
-    """Compare the measured 2C rest jumps with the v2 model's, after the fit. Not used for fitting."""
-    fit = fit or load_fit(kind, "v2_")
-    sim = RateSimulator("2C", 2, kind, rest_period_s=REST_PERIOD_S, mesh="v2")
+def posthoc_2c_rests(kind: str = "SPMe", fit: dict | None = None, save: bool = True, prefix: str = "v2_", sim_kwargs: dict | None = None) -> dict:
+    """Compare the measured 2C rest jumps with the fitted model's, after the fit. Not used for fitting.
+    ``prefix`` "v2_" (default) or "v2_1_" with the variant's ``sim_kwargs``."""
+    fit = fit or (load_fit_all(kind, prefix) if sim_kwargs else load_fit(kind, prefix))
+    sim = RateSimulator("2C", 2, kind, rest_period_s=REST_PERIOD_S, mesh="v2", **(sim_kwargs or {}))
     frames = sim.run(fit, include_rests=True)
-    out = {"model": kind, "version": "v2", "post_hoc_only": True, "note": "2C rests were never used in fitting; comparison made after the fit", "rests": {}}
+    version = prefix.rstrip("_").replace("v2_1", "v2.1")
+    out = {"model": kind, "version": version, "post_hoc_only": True, "note": "2C rests were never used in fitting; comparison made after the fit", "rests": {}}
     traces = []
     for after in REST_KINDS:
         r = get_rest("2C", 2, after)
@@ -108,12 +110,13 @@ def posthoc_2c_rests(kind: str = "SPMe", fit: dict | None = None, save: bool = T
         }
         traces.append(pd.DataFrame({"rate": "2C", "after": after, "source": "model", "time_s": f["time_s"], "voltage_V": f["voltage_V"]}))
         traces.append(pd.DataFrame({"rate": "2C", "after": after, "source": "measured", "time_s": r.time_s, "voltage_V": r.voltage_V}))
-    out["v2_R_contact_ohm"] = fit["R_contact"]
+    out["fitted_R_contact_ohm"] = fit["R_contact"]
+    out["v2_R_contact_ohm"] = fit["R_contact"]  # kept for older readers of the v2 file
     out["measured_2c_after_charge_ohm"] = out["rests"][rest_key("2C", "charge")]["instantaneous_resistance_measured_ohm"]
     out["measured_2c_after_discharge_ohm"] = out["rests"][rest_key("2C", "discharge")]["instantaneous_resistance_measured_ohm"]
     if save:
-        pd.concat(traces).to_csv(PROCESSED_DIR / f"v2_model_rests_2c_{kind.lower()}.csv", index=False)
-        with open(RESULTS_DIR / f"v2_rest_posthoc_2c_{kind.lower()}.json", "w") as f:
+        pd.concat(traces).to_csv(PROCESSED_DIR / f"{prefix}model_rests_2c_{kind.lower()}.csv", index=False)
+        with open(RESULTS_DIR / f"{prefix}rest_posthoc_2c_{kind.lower()}.json", "w") as f:
             json.dump(out, f, indent=2)
     return out
 
@@ -130,18 +133,22 @@ def comparison(kinds=("SPMe", "DFN"), save: bool = True) -> dict:
     out = {"models": {}}
     for kind in kinds:
         k = kind.lower()
-        v1f, v2f = _load(f"fit_{k}.json"), _load(f"v2_fit_{k}.json")
-        v1v, v2v = _load(f"validation_{k}.json"), _load(f"v2_validation_{k}.json")
-        v1o, v2o = _load(f"overpotentials_{k}.json"), _load(f"v2_overpotentials_{k}.json")
-        v1c, v2c = _load(f"cv_{k}.json"), _load(f"v2_cv_{k}.json")
-        if not all([v1f, v2f, v1v, v2v]):
+        versions = {}
+        for ver, pre in (("v1", ""), ("v2", "v2_"), ("v2.1", "v2_1_")):
+            fj, vj = _load(f"{pre}fit_{k}.json"), _load(f"{pre}validation_{k}.json")
+            if fj and vj:
+                versions[ver] = (fj, vj, _load(f"{pre}overpotentials_{k}.json"), _load(f"{pre}cv_{k}.json"))
+        if "v1" not in versions or "v2" not in versions:
             continue
+        v1v = versions["v1"][1]
         entry = {}
-        for ver, fj, vj, oj, cj in (("v1", v1f, v1v, v1o, v1c), ("v2", v2f, v2v, v2o, v2c)):
+        for ver, (fj, vj, oj, cj) in versions.items():
             h = vj["headline"]
             c10 = vj["rates"]["C/10"]["discharge"]
             e = {
-                "parameters": {n: fj["parameters"][n]["value"] for n in ("Ds", "k", "R_contact")},
+                "parameters": {n: fj["parameters"][n]["value"] for n in fj["parameters"] if n != "tau_R2_over_Ds_s"},
+                "model_options": fj.get("model_options", {}),
+                "variant": fj.get("variant"),
                 "tau_R2_over_Ds_s": fj["parameters"]["tau_R2_over_Ds_s"]["value"],
                 "k_R_contact_correlation": fj["log10_correlation"]["k-R_contact"],
                 "Ds_k_correlation": fj["log10_correlation"]["Ds-k"],
@@ -168,6 +175,10 @@ def comparison(kinds=("SPMe", "DFN"), save: bool = True) -> dict:
         entry["measured_2c_capacity_mAh"] = v1v["headline"]["measured_mAh"]
         entry["two_c_abs_error_change_pct_points"] = abs(entry["v2"]["two_c"]["capacity_error_pct"]) - abs(entry["v1"]["two_c"]["capacity_error_pct"])
         entry["two_c_improved"] = bool(entry["two_c_abs_error_change_pct_points"] < 0)
+        if "v2.1" in entry:
+            e21, e1 = entry["v2.1"]["two_c"], entry["v1"]["two_c"]
+            entry["v2_1_two_c_abs_error_change_pct_points"] = abs(e21["capacity_error_pct"]) - abs(e1["capacity_error_pct"])
+            entry["v2_1_two_c_improved"] = bool(abs(e21["capacity_error_pct"]) < abs(e1["capacity_error_pct"]) and e21["vq_rmse_mV"] < e1["vq_rmse_mV"])
         out["models"][kind] = entry
     out["rests_measured"] = _load("v2_rests_measured.json") and {
         k: v for k, v in _load("v2_rests_measured.json").items() if k.startswith("after_") or k == "v1_R_contact_ohm"
@@ -223,9 +234,10 @@ def fig_rests_measured():
     return savefig(fig, "v2_rests_measured")
 
 
-def fig_fit_rests(kind: str):
-    df = pd.read_csv(PROCESSED_DIR / f"v2_model_rests_{kind.lower()}.csv")
-    fitj = json.load(open(RESULTS_DIR / f"v2_fit_{kind.lower()}.json"))
+def fig_fit_rests(kind: str, prefix: str = "v2_"):
+    df = pd.read_csv(PROCESSED_DIR / f"{prefix}model_rests_{kind.lower()}.csv")
+    fitj = json.load(open(RESULTS_DIR / f"{prefix}fit_{kind.lower()}.json"))
+    label = prefix.rstrip("_").replace("v2_1", "v2.1")
     fig, axes = plt.subplots(2, 3, figsize=(13, 7))
     for j, rate in enumerate(TRAINED_RATES):
         for i, after in enumerate(REST_KINDS):
@@ -233,33 +245,40 @@ def fig_fit_rests(kind: str):
             r = get_rest(rate, 1, after)
             m = df[(df["rate"] == rate) & (df["after"] == after) & (df["source"] == "model")]
             ax.plot(_logt(np.r_[0.0, r.time_s]), np.r_[r.v_before_V, r.voltage_V], marker="o", ms=3, color=COLORS[rate], label="measured", **MEASURED_STYLE)
-            ax.plot(_logt(m["time_s"]), m["voltage_V"], color="k", label=f"{kind} v2 fit", **MODEL_STYLE)
+            ax.plot(_logt(m["time_s"]), m["voltage_V"], color="k", label=f"{kind} {label} fit", **MODEL_STYLE)
             jr = fitj["rest_jumps"][rest_key(rate, after)]
             ax.set_title(f"{rate} rest after {after}: jump {jr['jump_measured_mV']:.0f} mV meas / {jr['jump_model_mV']:.0f} mV model", fontsize=9)
             ax.set_xscale("log")
             ax.set_xlabel("Time after switch-off (s)")
             ax.set_ylabel("Voltage (V)")
             ax.legend(fontsize=8)
-    fig.suptitle(f"v2 training rests ({kind}): measured vs fitted; the point at 1 ms is the last sample under current", fontsize=10)
+    opts = fitj.get("model_options")
+    fig.suptitle(
+        f"{label} training rests ({kind}{', ' + ', '.join(f'{a} = {b}' for a, b in opts.items()) if opts else ''}): measured vs fitted; "
+        "the point at 1 ms is the last sample under current",
+        fontsize=10,
+    )
     fig.tight_layout()
-    return savefig(fig, f"v2_fit_rests_{kind.lower()}")
+    return savefig(fig, f"{prefix}fit_rests_{kind.lower()}")
 
 
 def fig_comparison(kind: str = "DFN"):
-    v1 = pd.read_csv(PROCESSED_DIR / f"model_gcd_{kind.lower()}.csv")
-    v2 = pd.read_csv(PROCESSED_DIR / f"v2_model_gcd_{kind.lower()}.csv")
     comp = json.load(open(RESULTS_DIR / "v2_comparison.json"))["models"][kind]
+    versions = [("v1", "", "#7f7f7f", ":"), ("v2", "v2_", "k", "--")]
+    if "v2.1" in comp:
+        versions.append(("v2.1", "v2_1_", "#d62728", "-."))
+    curves = {ver: pd.read_csv(PROCESSED_DIR / f"{pre}model_gcd_{kind.lower()}.csv") for ver, pre, _, _ in versions}
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.3))
     ax = axes[0]
     m = get_step("2C", 2, "discharge")
     ax.plot(m.capacity_mAh, m.voltage_V, color=COLORS["2C"], label="2C measured (cycle 2)", **MEASURED_STYLE)
-    for df, ver, color in ((v1, "v1", "#7f7f7f"), (v2, "v2", "k")):
-        s = df[(df["rate"] == "2C") & (df["step"] == "discharge")]
+    for ver, _, color, _ in versions:
+        s = curves[ver][(curves[ver]["rate"] == "2C") & (curves[ver]["step"] == "discharge")]
         e = comp[ver]["two_c"]
         ax.plot(s["capacity_mAh"], s["voltage_V"], color=color, label=f"{ver} {kind}: {e['capacity_mAh']:.3f} mAh ({e['capacity_error_pct']:+.1f} %)", **MODEL_STYLE)
     ax.set_xlabel("Discharge capacity (mAh)")
     ax.set_ylabel("Voltage vs Li/Li$^+$ (V)")
-    ax.set_title("Blind 2C discharge: v1 vs v2")
+    ax.set_title("Blind 2C discharge: " + " vs ".join(v[0] for v in versions))
     ax.set_ylim(3.4, 4.4)
     ax.legend(fontsize=8)
     ax = axes[1]
@@ -268,28 +287,31 @@ def fig_comparison(kind: str = "DFN"):
             continue
         mm = get_step(rate, 1, "discharge")
         ax.plot(mm.capacity_mAh, mm.voltage_V, color=COLORS[rate], label=f"{rate} measured", **MEASURED_STYLE)
-        for df, ver, ls in ((v1, "v1", ":"), (v2, "v2", "--")):
-            s = df[(df["rate"] == rate) & (df["step"] == "discharge")]
+        for ver, _, _, ls in versions:
+            s = curves[ver][(curves[ver]["rate"] == rate) & (curves[ver]["step"] == "discharge")]
             ax.plot(s["capacity_mAh"], s["voltage_V"], color=COLORS[rate], ls=ls, lw=1.3, label=f"{rate} {ver}")
     ax.set_xlabel("Discharge capacity (mAh)")
-    ax.set_title("C/10, C/5, C/2 discharges (v1 dotted, v2 dashed)")
+    ax.set_title("C/10, C/5, C/2 discharges (v1 dotted, v2 dashed" + (", v2.1 dash-dot)" if "v2.1" in comp else ")"))
     ax.set_ylim(3.4, 4.6)
-    ax.legend(fontsize=6.5, ncol=3)
+    ax.legend(fontsize=6, ncol=3)
     ax = axes[2]
-    posthoc = _load(f"v2_rest_posthoc_2c_{kind.lower()}.json")
-    tr = pd.read_csv(PROCESSED_DIR / f"v2_model_rests_2c_{kind.lower()}.csv") if (PROCESSED_DIR / f"v2_model_rests_2c_{kind.lower()}.csv").exists() else None
+    last_pre = versions[-1][1]
+    posthoc = _load(f"{last_pre}rest_posthoc_2c_{kind.lower()}.json")
     for after, color in zip(REST_KINDS, (COLORS["2C"], "#17becf")):
         r = get_rest("2C", 2, after)
         ax.plot(_logt(np.r_[0.0, r.time_s]), 1000 * (np.r_[r.v_before_V, r.voltage_V] - r.v_before_V), marker="o", ms=3, color=color, label=f"after {after}, measured", **MEASURED_STYLE)
-        if tr is not None:
-            s = tr[(tr["after"] == after) & (tr["source"] == "model")]
-            ax.plot(_logt(s["time_s"]), 1000 * (s["voltage_V"] - r.v_before_V), color=color, label=f"after {after}, v2 {kind}", **MODEL_STYLE)
+        for ver, pre, _, ls in versions[1:]:
+            path = PROCESSED_DIR / f"{pre}model_rests_2c_{kind.lower()}.csv"
+            if path.exists():
+                tr = pd.read_csv(path)
+                s = tr[(tr["after"] == after) & (tr["source"] == "model")]
+                ax.plot(_logt(s["time_s"]), 1000 * (s["voltage_V"] - r.v_before_V), color=color, ls=ls, lw=1.6, label=f"after {after}, {ver} {kind}")
     ax.set_xscale("log")
     ax.set_xlabel("Time after switch-off (s)")
     ax.set_ylabel("V(rest) - V(cut-off) (mV)")
     title = "2C rests, post-hoc (never fitted)"
     if posthoc:
-        title += f"\nmeasured {posthoc['measured_2c_after_charge_ohm']:.0f} Ω after charge vs v2 R_contact {posthoc['v2_R_contact_ohm']:.0f} Ω"
+        title += f"\nmeasured {posthoc['measured_2c_after_charge_ohm']:.0f} Ω after charge vs {versions[-1][0]} R_contact {posthoc['fitted_R_contact_ohm']:.0f} Ω"
     ax.set_title(title, fontsize=9)
     ax.legend(fontsize=7)
     fig.tight_layout()
@@ -341,8 +363,14 @@ def make_figures(headline_kind: str = "DFN", kinds=("SPMe", "DFN")):
             paths.append(fig_weighting(kind))
         if (RESULTS_DIR / f"v2_validation_{kind.lower()}.json").exists():
             paths += [fig_overpotentials(kind, "v2_"), fig_cv(kind, "v2_")]
+        if (RESULTS_DIR / f"v2_1_fit_{kind.lower()}.json").exists():
+            paths.append(fig_fit_rests(kind, "v2_1_"))
+        if (RESULTS_DIR / f"v2_1_validation_{kind.lower()}.json").exists():
+            paths += [fig_overpotentials(kind, "v2_1_"), fig_cv(kind, "v2_1_")]
     if (RESULTS_DIR / f"v2_validation_{headline_kind.lower()}.json").exists():
         paths.append(fig_headline(headline_kind, "v2_"))
+    if (RESULTS_DIR / f"v2_1_validation_{headline_kind.lower()}.json").exists():
+        paths.append(fig_headline(headline_kind, "v2_1_"))
     if (RESULTS_DIR / "v2_comparison.json").exists() and headline_kind in json.load(open(RESULTS_DIR / "v2_comparison.json"))["models"]:
         paths.append(fig_comparison(headline_kind))
     return paths

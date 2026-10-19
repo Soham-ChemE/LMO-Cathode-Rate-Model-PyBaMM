@@ -13,7 +13,7 @@ import json
 import sys
 import time
 
-from lmo import RESULTS_DIR, diagnostics, figures, fit, fit_v2, ocv, relaxation, validate
+from lmo import RESULTS_DIR, diagnostics, figures, fit, fit_v2, fit_v21, ocv, relaxation, validate
 from lmo.io import cv_peaks, gcd_summary
 from lmo import CVS
 
@@ -84,7 +84,16 @@ def run_v2(kinds, headline):
         diagnostics.run(kind, prefix="v2_")
         print(f"v2-5. {kind} post-hoc 2C rests (not fitted)")
         relaxation.posthoc_2c_rests(kind)
-    print("v2-6. v1 vs v2 comparison and figures")
+    for kind in kinds:
+        print(f"v2.1-1. {kind}: variants with double layer and/or particle-size distribution, headline '{fit_v21.HEADLINE_VARIANT}' with LOO")
+        fit_v21.run(kind)
+        kw = fit_v21.sim_kwargs(fit_v21.HEADLINE_VARIANT)
+        print(f"v2.1-2. {kind} blind validation, CVs, overpotentials, post-hoc 2C rests")
+        validate.predict_all(kind, prefix="v2_1_", mesh="v2", sim_kwargs=kw)
+        validate.validate_cv(kind, prefix="v2_1_", mesh="v2", sim_kwargs=kw)
+        diagnostics.run(kind, prefix="v2_1_")
+        relaxation.posthoc_2c_rests(kind, prefix="v2_1_", sim_kwargs=kw)
+    print("v2-6. v1 vs v2 vs v2.1 comparison and figures")
     relaxation.comparison(kinds)
     for p in relaxation.make_figures(headline, kinds):
         print("   ", p)
@@ -93,8 +102,9 @@ def run_v2(kinds, headline):
 def write_summary(kinds):
     """results/summary.json (v1) and results/v2_summary.json: the numbers the README quotes."""
     _write_summary(kinds, "")
-    if all((RESULTS_DIR / f"v2_validation_{k.lower()}.json").exists() for k in kinds):
-        _write_summary(kinds, "v2_")
+    for prefix in ("v2_", "v2_1_"):
+        if all((RESULTS_DIR / f"{prefix}validation_{k.lower()}.json").exists() for k in kinds):
+            _write_summary(kinds, prefix)
 
 
 def _write_summary(kinds, prefix):
