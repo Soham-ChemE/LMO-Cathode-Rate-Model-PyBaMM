@@ -19,6 +19,23 @@
       "k_R_contact_correlation": 0.8814908639216646,
       "converged": true,
       "fit_time_s": 348.3434920310974
+    },
+    "psd": {
+      "model_options": {
+        "particle size": "distribution"
+      },
+      "parameters": {
+        "Ds": 1.8714691477071017e-13,
+        "k": 1.482939876704946e-11,
+        "R_contact": 83.77185253534704,
+        "sd_p": 1.9952623149688793
+      },
+      "tau_R2_over_Ds_s": 133.58488987451202,
+      "training_rmse_curves_mV": 23.559740305897275,
+      "training_rmse_rests_mV": 35.690033971241654,
+      "k_R_contact_correlation": 0.8957609761746108,
+      "converged": true,
+      "fit_time_s": 2642.543651819229
     }
   }
 }
