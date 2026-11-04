@@ -35,7 +35,7 @@ const textSprite = (txt, color, w = 2.4) => { const c = document.createElement('
     const pts = c.measured; const pos = [], idx = []; for (let k = 0; k < pts.length; k++) { const x = X(pts[k][0]), y = Y(pts[k][1]), z = Z(i); pos.push(x, y, z - .14, x, y, z + .14); } for (let k = 0; k < pts.length - 1; k++) { const a = 2 * k; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
     const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: RATE_COL[c.rate], side: THREE.DoubleSide, transparent: true, opacity: .92, roughness: .35, emissive: RATE_COL[c.rate], emissiveIntensity: .25 })); rib.add(mesh);
-    const mp = c.model.map(p => new THREE.Vector3(X(p[0]), Y(p[1]) + .02, Z(i))); const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(mp), new THREE.LineDashedMaterial({ color: S.isDark() ? 0xffffff : 0x0b1220, dashSize: .12, gapSize: .08, transparent: true, opacity: .9 })); line.computeLineDistances(); rib.add(line);
+    const mp = c.model.map(p => new THREE.Vector3(X(p[0]), Y(p[1]) + .02, Z(i))); const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(mp), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: .12, gapSize: .08, transparent: true, opacity: .9 })); line.computeLineDistances(); rib.add(line);
     const s = textSprite(c.rate + (c.role === 'blind prediction' ? ' (blind)' : c.role === 'training' ? ' (fit)' : ''), '#' + RATE_COL[c.rate].toString(16).padStart(6, '0'), 1.5); s.position.set(X(pts[pts.length - 1][0]) + .7, Y(pts[pts.length - 1][1]), Z(i)); rib.add(s);
     ribbons[c.rate] = { mesh, line, label: s, nIdx: idx.length, nLine: mp.length };
   });
@@ -43,7 +43,7 @@ const textSprite = (txt, color, w = 2.4) => { const c = document.createElement('
   const P = (a, b, c) => new THREE.Vector3(a, b, c); [[P(X(0), Y(3.5), Z(3) - .5), P(X(1.5), Y(3.5), Z(3) - .5)], [P(X(0), Y(3.5), Z(3) - .5), P(X(0), Y(4.5), Z(3) - .5)], [P(X(0), Y(3.5), Z(3) - .5), P(X(0), Y(3.5), Z(0) + .5)]].forEach(([a, b]) => ax.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), lm)));
   const axl = [textSprite('capacity 0 → 1.5 mAh', '#8b98a9', 2.2), textSprite('3.5 → 4.5 V', '#8b98a9', 1.4)]; axl[0].position.set(X(.75), Y(3.5) - .3, Z(3) - .5); axl[1].position.set(X(0) - .9, Y(4.0), Z(3) - .5); axl.forEach(s => ax.add(s)); rib.add(ax);
   function highlight() { for (const r in ribbons) { const on = r === rate; ribbons[r].mesh.material.opacity = on ? 1 : .5; ribbons[r].mesh.material.emissiveIntensity = on ? .6 : .15; ribbons[r].line.material.opacity = on ? 1 : .4; } } highlight();
-  st.onTheme = dark => { Object.values(ribbons).forEach(r => r.line.material.color.set(dark ? 0xffffff : 0x0b1220)); st.dirty = true; };
+  st.onTheme = dark => { stageBg(); st.dirty = true; };
   // ---------- 2C loss split: four bars that grow at the end of the track ----------
   const sh = D.stats.shares; const SPLIT = { o: Math.round(sh.contact_ohmic), r: Math.round(sh.reaction), d: Math.round(sh.particle_diffusion), e: Math.round(sh.electrolyte_concentration + sh.electrolyte_ohmic + sh.solid_ohmic) };
   const bars = new THREE.Group(); rib.add(bars); const BARC = { o: 0xf87171, r: 0xf59e0b, d: 0x34d399, e: 0x22d3ee }; const BARL = { o: 'ohmic + contact', r: 'charge transfer', d: 'particle diffusion', e: 'electrolyte' };
