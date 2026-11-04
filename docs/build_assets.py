@@ -157,3 +157,50 @@ fig.text(0.05, 0.62, "PyBaMM DFN half cell fitted to my own\nBio-Logic data, val
 fig.text(0.05, 0.36, f"{stats['train_rmse_mV']} mV training RMSE, 3 fitted parameters\n2C mean voltage within {stats['two_c_v_err_mV']} mV, never fitted\nsix CV peaks within {stats['cv_max_shift_mV']} mV", color="#22d3ee", fontsize=14, va="top")
 fig.text(0.05, 0.10, "Soham Kavathekar  |  github.com/Soham-ChemE", color="#8b98a9", fontsize=12)
 fig.savefig(os.path.join(OUT, "social-preview.png"), dpi=100, facecolor=DARK); plt.close(fig); print("wrote social-preview.png")
+
+# ---------------- animated README hero (SVG with CSS keyframes; GitHub renders these through <img>) ----------------
+# The four measured discharge curves (the thinned points above, from the raw EC-Lab files) draw themselves one after the
+# other with a stroke-dash animation, the DFN curves follow dashed, and the headline numbers cycle. No SMIL, no scripts.
+RC = {"C/10": "#22d3ee", "C/5": "#34d399", "C/2": "#f59e0b", "2C": "#f87171"}
+PX, PY, PW, PH = 930, 70, 580, 360
+def _x(q): return PX + min(q, 1.5) / 1.5 * PW
+def _y(v): return PY + PH - (min(max(v, 3.5), 4.5) - 3.5) / 1.0 * PH
+paths = ""; css = ""
+for i, c in enumerate(curves):
+    d = "M " + " L ".join(f"{_x(q):.1f} {_y(v):.1f}" for q, v in c["measured"])
+    dm = "M " + " L ".join(f"{_x(q):.1f} {_y(v):.1f}" for q, v in c["model"])
+    paths += f'<path class="meas m{i}" d="{d}" fill="none" stroke="{RC[c["rate"]]}" stroke-width="3.5" stroke-linecap="round"/>'
+    paths += f'<path class="mod m{i}" d="{dm}" fill="none" stroke="#e6edf3" stroke-width="1.5" stroke-dasharray="6 5" opacity=".85"/>'
+    qx, qv = c["measured"][-1]; paths += f'<text class="t cl c{i}" x="{_x(qx) + 8:.1f}" y="{_y(qv) + 4:.1f}" fill="{RC[c["rate"]]}">{c["rate"]}{" (blind)" if c["role"] == "blind prediction" else " (fit)" if c["role"] == "training" else ""}</text>'
+    css += f".m{i}{{animation-delay:{i * 2.2:.1f}s}}.c{i}{{animation-delay:{i * 2.2 + 2.0:.1f}s}}\n"
+S = stats
+lines = [(f"{S['train_rmse_mV']} mV", "training RMSE on C/5 and C/2 with three fitted parameters"), (f"{S['two_c_v_err_mV']} mV", "blind 2C average discharge voltage error"),
+         (f"{S['cv_max_shift_mV']} mV", "largest error over six CV peak potentials at three scan rates, never fitted"), (f"{int(round(S['shares']['contact_ohmic']))} / {int(round(S['shares']['reaction']))} / {int(round(S['shares']['particle_diffusion']))} %", "of the 2C loss: ohmic + contact, charge transfer, particle diffusion")]
+stat_svg = "".join(f'<g class="st s{i}"><text x="80" y="268" class="big">{a}</text><text x="80" y="300" class="small">{b}</text></g>' for i, (a, b) in enumerate(lines))
+svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 500" width="1600" height="500" role="img" aria-label="LiMn2O4 half-cell rate model: the four measured discharge curves at C/10, C/5, C/2 and 2C draw themselves with the DFN model dashed through each, next to the headline numbers">
+<style>
+.t{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}}
+.h{{font-size:54px;font-weight:800;fill:#e6edf3;letter-spacing:-1.5px}}.sub{{font-size:21px;fill:#8b98a9}}.big{{font-size:34px;font-weight:800;fill:#22d3ee}}.small{{font-size:16px;fill:#8b98a9}}.foot{{font-size:15px;fill:#5b6676}}.ax{{font-size:13px;fill:#8b98a9}}.cl{{font-size:14px;font-weight:700;opacity:0;animation:show 12s infinite}}
+.meas{{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 12s infinite}}.mod{{opacity:0;animation:show 12s infinite}}
+@keyframes draw{{0%{{stroke-dashoffset:1400}}16%{{stroke-dashoffset:0}}92%{{stroke-dashoffset:0}}100%{{stroke-dashoffset:1400}}}}
+@keyframes show{{0%,14%{{opacity:0}}18%{{opacity:.9}}92%{{opacity:.9}}100%{{opacity:0}}}}
+{css}
+.st{{opacity:0;animation:cycle 16s infinite}}.s1{{animation-delay:4s}}.s2{{animation-delay:8s}}.s3{{animation-delay:12s}}
+@keyframes cycle{{0%,22%{{opacity:1}}25%,97%{{opacity:0}}100%{{opacity:1}}}}
+@media (prefers-reduced-motion:reduce){{.meas,.mod,.cl,.st{{animation:none}}.meas{{stroke-dashoffset:0}}.mod,.cl{{opacity:.9}}.s0{{opacity:1}}}}
+</style>
+<rect width="1600" height="500" fill="#0b1220"/>
+<g class="t">
+<text x="80" y="120" class="h">Fit on C/5 and C/2.</text><text x="80" y="178" class="h">Predict 2C blind.</text>
+<text x="80" y="218" class="sub">Doyle-Fuller-Newman half-cell model of a commercial LiMn₂O₄ cathode in PyBaMM</text>
+{stat_svg}
+<text x="80" y="420" class="foot">One coin cell, four C-rates, three scan rates · every number regenerated from the raw cycler files</text>
+<text x="80" y="446" class="foot">Right: measured discharge curves (solid) and the DFN model (dashed) · open the live page for the 3D half cell</text>
+<rect x="{PX}" y="{PY}" width="{PW}" height="{PH}" fill="none" stroke="#1f2a3c"/>
+<text x="{PX + PW / 2}" y="{PY + PH + 28}" class="ax" text-anchor="middle">discharge capacity, 0 → 1.5 mAh</text>
+<text x="{PX - 12}" y="{PY + PH / 2}" class="ax" text-anchor="middle" transform="rotate(-90 {PX - 12} {PY + PH / 2})">cell voltage, 3.5 → 4.5 V</text>
+{paths}
+</g>
+</svg>"""
+with open(os.path.join(OUT, "hero.svg"), "w", encoding="utf-8") as f: f.write(svg)
+print("wrote hero.svg", os.path.getsize(os.path.join(OUT, "hero.svg")), "bytes")
