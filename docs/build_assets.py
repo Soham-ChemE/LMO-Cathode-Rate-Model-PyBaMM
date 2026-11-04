@@ -12,6 +12,9 @@ Writes:
   docs/assets/social-preview.png      1280x640
 Run from the repository root with the package installed:  python docs/build_assets.py
 """
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools")); import page_assets   # --snap, --qa, --lighthouse, --hero-png: the live page's 3D-scene fallbacks and QA
+if page_assets.handle_flags(sys.argv): sys.exit(0)
 import json, os, sys, subprocess
 import numpy as np, pandas as pd
 import matplotlib; matplotlib.use("Agg")
@@ -204,3 +207,6 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 500" width="
 </svg>"""
 with open(os.path.join(OUT, "hero.svg"), "w", encoding="utf-8") as f: f.write(svg)
 print("wrote hero.svg", os.path.getsize(os.path.join(OUT, "hero.svg")), "bytes")
+
+# ---------------- the live page: static fallbacks for the 3D body scenes, both-theme screenshots, Lighthouse ----------------
+if "--no-page" not in sys.argv: page_assets.page_tasks([])

@@ -11,10 +11,8 @@ const textSprite = (txt, color, w = 2.4) => { const c = document.createElement('
   const canvas = document.getElementById('heroCanvas'); if (!canvas) return;
   const st = createStage(canvas, { fov: 40, bloom: { strength: .35, radius: .45, threshold: .85 }, dof: { aperture: .0004, maxblur: .003 }, exposure: 1.0, envIntensity: .45 });
   if (st.failed) return; const { scene, camera } = st;
-  // the hero is a data display: it keeps a dark stage in both themes so the ribbons and ions read (the page shade blends it into the page colour)
-  const stageBg = () => { scene.background = new THREE.Color(S.isDark() ? '#0b1220' : '#111a2b'); st.dirty = true; }; stageBg();
   const ctr = new OrbitControls(camera, canvas); ctr.enableDamping = true; ctr.enableZoom = false; ctr.enablePan = false; ctr.autoRotate = !reduced; ctr.autoRotateSpeed = .4; ctr.minPolarAngle = .85; ctr.maxPolarAngle = 1.5;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x334466, .9)); const dl = new THREE.DirectionalLight(0xffffff, 1.5); dl.position.set(4, 8, 6); scene.add(dl);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x334466, .9); scene.add(hemi); const dl = new THREE.DirectionalLight(0xffffff, 1.5); dl.position.set(4, 8, 6); scene.add(dl);
   const rnd = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
   // ---------- cell sandwich ----------
   const cell = new THREE.Group(); scene.add(cell);
@@ -45,7 +43,7 @@ const textSprite = (txt, color, w = 2.4) => { const c = document.createElement('
   const P = (a, b, c) => new THREE.Vector3(a, b, c); [[P(X(0), Y(3.5), Z(3) - .5), P(X(1.5), Y(3.5), Z(3) - .5)], [P(X(0), Y(3.5), Z(3) - .5), P(X(0), Y(4.5), Z(3) - .5)], [P(X(0), Y(3.5), Z(3) - .5), P(X(0), Y(3.5), Z(0) + .5)]].forEach(([a, b]) => ax.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), lm)));
   const axl = [textSprite('capacity 0 → 1.5 mAh', '#8b98a9', 2.2), textSprite('3.5 → 4.5 V', '#8b98a9', 1.4)]; axl[0].position.set(X(.75), Y(3.5) - .3, Z(3) - .5); axl[1].position.set(X(0) - .9, Y(4.0), Z(3) - .5); axl.forEach(s => ax.add(s)); rib.add(ax);
   function highlight() { for (const r in ribbons) { const on = r === rate; ribbons[r].mesh.material.opacity = on ? 1 : .5; ribbons[r].mesh.material.emissiveIntensity = on ? .6 : .15; ribbons[r].line.material.opacity = on ? 1 : .4; } } highlight();
-  st.onTheme = dark => { stageBg(); st.dirty = true; };
+  st.onTheme = dark => { hemi.intensity = .9 * st.lights; dl.intensity = 1.5 * st.lights; st.dirty = true; }; st.onTheme(st.dark);
   // ---------- 2C loss split: four bars that grow at the end of the track ----------
   const sh = D.stats.shares; const SPLIT = { o: Math.round(sh.contact_ohmic), r: Math.round(sh.reaction), d: Math.round(sh.particle_diffusion), e: Math.round(sh.electrolyte_concentration + sh.electrolyte_ohmic + sh.solid_ohmic) };
   const bars = new THREE.Group(); rib.add(bars); const BARC = { o: 0xf87171, r: 0xf59e0b, d: 0x34d399, e: 0x22d3ee }; const BARL = { o: 'ohmic + contact', r: 'charge transfer', d: 'particle diffusion', e: 'electrolyte' };
@@ -70,7 +68,7 @@ const textSprite = (txt, color, w = 2.4) => { const c = document.createElement('
     const draw = reduced ? 1 : Math.max(0, Math.min(1, (T - .1) / .55)); let i = 0;
     for (const r in ribbons) { const rb = ribbons[r]; const lead = Math.max(0, Math.min(1, draw * 1.25 - i * .08)); rb.mesh.geometry.setDrawRange(0, Math.floor(rb.nIdx * lead)); rb.line.geometry.setDrawRange(0, Math.floor(rb.nLine * lead)); rb.label.visible = lead >= .999; i++; }
     const grow = reduced ? 1 : Math.max(0, Math.min(1, (T - .7) / .25)); barMeshes.forEach((b, k) => { const g = Math.max(.001, Math.min(1, grow * 1.3 - k * .1)); b.m.scale.y = g; b.m.position.y = Y(3.5) + b.h * g / 2; b.l.visible = g >= .999; }); barTitle.visible = grow > .2;
-    if (st.bloom) st.bloom.strength = .3 + .25 * S.hero.glow; if (st.bokeh) st.bokeh.uniforms.focus.value = camera.position.distanceTo(ctr.target);
+    st.setBloom(.3 + .25 * S.hero.glow); if (st.bokeh) st.bokeh.uniforms.focus.value = camera.position.distanceTo(ctr.target);
     if (Math.abs(T - lastT) > 1e-4) { lastT = T; changed = true; }
     return changed;
   });
