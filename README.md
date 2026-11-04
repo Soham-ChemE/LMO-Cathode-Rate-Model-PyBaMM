@@ -1,8 +1,9 @@
-<p align="center"><a href="https://soham-cheme.github.io/LMO-Cathode-Rate-Model-PyBaMM/"><img src="docs/assets/hero.png" alt="Live page: 3D LiMn2O4 half cell with animated lithium flux and the measured discharge curves at four C-rates as 3D ribbons" width="100%"></a></p>
+<p align="center"><a href="https://soham-cheme.github.io/LMO-Cathode-Rate-Model-PyBaMM/"><img src="docs/assets/hero.svg" alt="LiMn2O4 half-cell rate model: the four measured discharge curves at C/10, C/5, C/2 and 2C draw themselves with the DFN model dashed through each, next to the headline numbers" width="100%"></a></p>
+
+<p align="center"><b><a href="https://soham-cheme.github.io/LMO-Cathode-Rate-Model-PyBaMM/">Open the live page</a></b> · scroll-driven 3D: the half cell with its lithium-ion stream, the four measured rate curves drawing as ribbons, and the 2C loss split</p>
 
 <div align="center">
 
-### [▶ View the live page](https://soham-cheme.github.io/LMO-Cathode-Rate-Model-PyBaMM/) · interactive cell, measured curves at four rates, where the 2C voltage goes
 
 [![PyBaMM](https://img.shields.io/badge/PyBaMM-26.10-0b1220?style=flat-square&logoColor=34D399)](https://pybamm.org)
 [![Tests](https://img.shields.io/badge/tests-58%20passing-0b1220?style=flat-square&logoColor=34D399)](tests/)
