@@ -11,6 +11,8 @@ const textSprite = (txt, color, w = 2.4) => { const c = document.createElement('
   const canvas = document.getElementById('heroCanvas'); if (!canvas) return;
   const st = createStage(canvas, { fov: 40, bloom: { strength: .35, radius: .45, threshold: .85 }, dof: { aperture: .0004, maxblur: .003 }, exposure: 1.0, envIntensity: .45 });
   if (st.failed) return; const { scene, camera } = st;
+  // the hero is a data display: it keeps a dark stage in both themes so the ribbons and ions read (the page shade blends it into the page colour)
+  const stageBg = () => { scene.background = new THREE.Color(S.isDark() ? '#0b1220' : '#111a2b'); st.dirty = true; }; stageBg();
   const ctr = new OrbitControls(camera, canvas); ctr.enableDamping = true; ctr.enableZoom = false; ctr.enablePan = false; ctr.autoRotate = !reduced; ctr.autoRotateSpeed = .4; ctr.minPolarAngle = .85; ctr.maxPolarAngle = 1.5;
   scene.add(new THREE.HemisphereLight(0xffffff, 0x334466, .9)); const dl = new THREE.DirectionalLight(0xffffff, 1.5); dl.position.set(4, 8, 6); scene.add(dl);
   const rnd = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
