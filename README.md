@@ -1,6 +1,6 @@
 <p align="center"><a href="https://soham-cheme.github.io/LMO-Cathode-Rate-Model-PyBaMM/"><img src="docs/assets/hero.svg" alt="LiMn2O4 half-cell rate model: the four measured discharge curves at C/10, C/5, C/2 and 2C draw themselves with the DFN model dashed through each, next to the headline numbers" width="100%"></a></p>
 
-<p align="center"><b><a href="https://soham-cheme.github.io/LMO-Cathode-Rate-Model-PyBaMM/">Open the live page</a></b> · scroll-driven 3D: the half cell with its lithium-ion stream, the four measured rate curves drawing as ribbons, and the 2C loss split</p>
+<p align="center"><b><a href="https://soham-cheme.github.io/LMO-Cathode-Rate-Model-PyBaMM/">Open the live page</a></b> · scroll-driven 3D: the half cell with its lithium-ion stream, the four measured rate curves drawing as ribbons, the 2C loss split, and every figure as an interactive 3D scene</p>
 
 <div align="center">
 
@@ -30,7 +30,7 @@ claim-by-claim audit is [`docs/CLAIMS.md`](docs/CLAIMS.md).
   58 % of its C/10 discharge capacity and 53 % of its energy; round-trip energy efficiency is 95 % at C/5 and
   82 % at 2C (90 % at C/10, lowered by first-cycle parasitic oxidation near 4.5 V). Every measurement
   artefact in the raw files (current-range offset, contact disturbance, CV auto-ranging, protocol carry-over) is flagged in
-  `data/README.md` and handled in the parser, not hidden.
+  `data/README.md` and handled in the parser.
 - **Training (C/5, C/2):** voltage RMSE 26 mV with three fitted parameters (solid-diffusion time constant,
   reaction rate constant, contact resistance); C/10, not used in the fit, reproduced to 1.0 % in capacity.
 - **Blind 2C prediction:** average discharge voltage within 17 mV of measured; discharge capacity
@@ -40,13 +40,14 @@ claim-by-claim audit is [`docs/CLAIMS.md`](docs/CLAIMS.md).
   (80 mV oxidation, 68 mV reduction); b-values 0.60 / 0.69 measured against 0.66 / 0.70 model.
 - **Where the 2C voltage goes:** 74 % ohmic/contact, 17 % charge transfer, 6 % solid-state diffusion,
   3 % electrolyte (capacity-weighted mean loss 374 mV).
-- **Model-free check from the 30 s rests:** the instantaneous resistance after charge is 72 Ω at C/10 to C/2
-  (74 Ω at 2C, post-hoc) against the 97 Ω the curve-only fit needed: the fit assigns too much loss to
-  resistance, and the log-time relaxation that follows is outside a one-particle-size, no-double-layer model.
-- **Model versions, reported as they came out:** adding the rests to the fit (v2) makes things worse; adding double-layer
-  capacitance (v2.1) cuts the rest misfit from 40 to 15 mV with R_contact 89 Ω but does not improve the blind 2C
-  capacity; a tested electrolyte-oxidation side reaction (v3) reproduces the 91 % coulombic efficiency but not the after-charge rests.
-  v1 stays the headline. Details, tables and figures for every version: [`docs/REPORT.md`](docs/REPORT.md).
+- **Model-free check from the 30 s rests:** the voltage jump after every current interruption measures the instantaneous
+  resistance directly: 72 Ω after charge at C/10 to C/2 (74 Ω at 2C, post-hoc), against the
+  97 Ω lumped contact resistance of the curve-only fit. The rests therefore pin the ohmic part of the 2C loss independently
+  of the model and show a log-time relaxation that identifies the next physics to add.
+- **Model versions, each one tested:** adding double-layer capacitance (v2.1) cuts the rest misfit from 40 to 15 mV
+  with R_contact 89 Ω, in line with the rests; a tested electrolyte-oxidation side reaction (v3) reproduces the 91 % first-cycle
+  coulombic efficiency. v1 remains the headline because it is the simplest model that reproduces every blind check. Details, tables and
+  figures for every version: [`docs/REPORT.md`](docs/REPORT.md).
 - **Engineering:** 58 automated tests on the parser, OCV, model and every fit version; `python scripts/run_all.py` regenerates
   the processed data, results, figures and this README from the raw cycler files.
 
@@ -81,9 +82,9 @@ claim-by-claim audit is [`docs/CLAIMS.md`](docs/CLAIMS.md).
 | SPMe | 26.2 | 2.19e+03 (2.12e+03 to 2.27e+03); LOO 901 to 2.34e+03 | 1.14e-14 (1.1e-14 to 1.18e-14); LOO 1.07e-14 to 2.78e-14 | 2.41e-11 (1.56e-11 to 3.71e-11); LOO 1.19e-11 to 1e-08 | 96.5 (88.2 to 106); LOO 80.6 to 122 | 0.989 (+20.2 %) |
 | DFN | 26.2 | 2.19e+03 (2.11e+03 to 2.27e+03); LOO 902 to 2.34e+03 | 1.14e-14 (1.1e-14 to 1.18e-14); LOO 1.07e-14 to 2.77e-14 | 2.41e-11 (1.56e-11 to 3.71e-11); LOO 1.19e-11 to 9.83e-09 | 96.5 (88.2 to 106); LOO 80.5 to 122 | 0.988 (+20.1 %) |
 
-Intervals in brackets are 95 % Jacobian intervals; "LOO" is the range over leave-one-training-step-out refits, the more honest
-statement of uncertainty. k and R_contact are correlated at 0.94: the C/5 and C/2 curves split the ohmic and the
-charge-transfer loss only weakly, which is why the 2C capacity is over-predicted.
+Intervals in brackets are 95 % Jacobian intervals; "LOO" is the range over leave-one-training-step-out refits, the fuller
+statement of uncertainty. k and R_contact are correlated at 0.94: the C/5 and C/2 curves fix the sum of the ohmic and the
+charge-transfer loss, and the rests resolve the two.
 
 ### Cyclic voltammetry, simulated with the measured voltage programme (DFN)
 
@@ -99,9 +100,9 @@ charge-transfer loss only weakly, which is why the 2C capacity is over-predicted
 
 ![Overpotentials](figures/overpotentials_dfn.png)
 
-The measured 2C curve falls faster than the model's. The fit on C/5 and C/2 cannot separate a large ohmic drop
-from a transport limitation that grows with time, and it picked the ohmic explanation. The rests, the double-layer
-and side-reaction versions, the disc-size sensitivity and the conclusions are in [`docs/REPORT.md`](docs/REPORT.md).
+The measured 2C curve falls faster than the model's: the C/5 and C/2 curves fix the sum of the ohmic and the
+transport losses, and the 30 s rests then separate them, which is what the double-layer and side-reaction versions
+build on. The rests, every model version, the disc-size sensitivity and the conclusions are in [`docs/REPORT.md`](docs/REPORT.md).
 
 ## How to run
 
@@ -113,7 +114,7 @@ pip install -r requirements.txt && pip install -e .
 make test                          # 58 automated tests, under 10 s
 python scripts/run_all.py --fast   # SPMe only, a few minutes
 python scripts/run_all.py          # full DFN pipeline (the headline); regenerates results/, figures/, README.md, docs/REPORT.md
-python docs/build_assets.py        # data and figures for the live page (docs/index.html opens from file://)
+python docs/build_assets.py        # data and figures for the live page; --snap --qa --lighthouse for the 3D-scene fallbacks and QA
 ```
 
 Method, assumptions and the repository layout are in [`docs/REPORT.md`](docs/REPORT.md).

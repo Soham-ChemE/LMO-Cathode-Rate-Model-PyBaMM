@@ -11,14 +11,14 @@
 <meta name="theme-color" content="#0b1220">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='8' width='22' height='16' rx='3' fill='%2334d399'/%3E%3Crect x='26' y='12' width='3' height='8' fill='%2334d399'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/site.css">
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js">
 <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/lenis@1.3.27/dist/lenis.min.js"></script>
 <script defer src="assets/data.js"></script>
 <script defer src="assets/site.js"></script>
-<script type="module" src="assets/scene.js"></script>
+<script type="module">if(!(window.SITE&&window.SITE.softGL)){import('./assets/scene.js');import('./assets/body.js');}</script>
 <style>.sticky-fig h4{margin:0 0 6px;font-size:15px}.sticky-fig .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
 .bar{display:flex;height:34px;border-radius:10px;overflow:hidden;background:var(--line)}
 .bar span{display:block;height:100%;width:0;transition:width 1s cubic-bezier(.2,.7,.2,1)}
@@ -36,7 +36,7 @@ ul.quirks{padding-left:18px;color:var(--muted);font-size:15px}ul.quirks li{margi
 .sticky-fig{padding:18px;height:auto;min-height:0}@media (max-width:820px){.sticky-fig{height:auto}}
 tr.hl td{font-weight:700}
 </style>
-<noscript><style>.hero .fallback{opacity:1}.reveal{opacity:1;transform:none}</style></noscript>
+<noscript><style>.hero .fallback{opacity:1}.reveal{opacity:1;transform:none}.viz img.fallback{opacity:1}</style></noscript>
 </head>
 <body>
 <nav><div class="wrap"><a class="brand" href="#top">LMO rate model</a>
@@ -67,10 +67,11 @@ tr.hl td{font-weight:700}
 <div class="eyebrow reveal">01 · The measurement</div>
 <h2 class="reveal">One coin cell, seven tests, four C-rates, three scan rates.</h2>
 <p class="lead reveal">Commercial LiMn₂O₄ sheet against lithium metal on a Bio-Logic VMP-300. Galvanostatic cycling at C/10, C/5, C/2 and 2C between 3.5 and 4.5 V with a 30 s rest after every step, and cyclic voltammetry at 0.1, 0.2 and 0.3 mV/s. At 2C the cell keeps <b id="retCap">58</b> % of its C/10 capacity and <b id="retE">53</b> % of its energy; round-trip energy efficiency falls from 95 % at C/5 to 82 % at 2C.</p>
+<div class="vizcard reveal" style="margin-bottom:28px"><div class="vizhead"><b>The cell as measured, exploded</b><span class="legend"><span><i style="background:var(--c-grey)"></i>Li metal, Al foil</span><span><i style="background:var(--c-violet)"></i>LiMn₂O₄ coating</span></span></div><div class="viz wide" data-viz="cell" role="img" aria-label="Exploded 3D view of the coin cell: lithium metal disc, separator, the 85 micrometre LiMn2O4 coating with its particles, and the aluminium foil, assembling on scroll"><img class="fallback" alt="" data-viz-fig="viz_cell" loading="lazy"></div><div class="vizfoot">10 mm disc, 85 µm coating of 5 µm particles on 15 µm aluminium, against lithium metal; the thicknesses in the scene are the ones in <code>docs/assets/data.js</code>. Drag to orbit.</div></div>
 <div class="two">
 <div class="tablewrap reveal"><table id="measTable"><thead><tr><th>Rate</th><th class="num">I (mA)</th><th class="num">Q (mAh)</th><th class="num">V̄ (V)</th><th class="num">E (mWh)</th><th class="num">RTE (%)</th></tr></thead><tbody></tbody></table>
 <p class="note">Representative cycle per rate (cycle 1; cycle 2 at 2C because cycle 1 followed a CV that ended at 3.0 V). RTE is discharge energy over charge energy of the same cycle; C/10 is lowered by first-cycle parasitic oxidation near 4.5 V (coulombic efficiency 91 %).</p></div>
-<div class="reveal"><div class="card"><b>Measurement artefacts, flagged and handled, not hidden</b>
+<div class="reveal"><div class="card"><b>Measurement artefacts, flagged and handled</b>
 <ul class="quirks" style="margin-top:10px">
 <li><b>C/10 current range:</b> run on the 10 mA range, so the current reads 0.147 / 0.140 mA against 0.143 set. The measured current is integrated, not the set point.</li>
 <li><b>C/5 contact disturbance:</b> a 22 mV step on the second discharge, current unchanged. Cycle 1 is used for fitting; the step returns at the switch-off, which confirms it as a contact resistance.</li>
@@ -84,20 +85,20 @@ tr.hl td{font-weight:700}
 <h2 class="reveal">Three parameters, fitted on two rates, reproduce the other two and a different technique.</h2>
 <p class="lead reveal">Solid-diffusion time constant, reaction rate constant and contact resistance were fitted by nonlinear least squares on the C/5 and C/2 curves only (26 mV RMSE). C/10 is a low-rate check, 2C is a blind prediction, and the CVs are simulated by feeding the model the measured voltage programme.</p>
 <div class="two">
-<div class="card reveal"><img data-fig="fig_curves" alt="Measured discharge curves at C/10, C/5, C/2 and 2C (solid) against the DFN model (dashed). The model matches C/10, C/5 and C/2 closely and over-predicts the 2C capacity." src="assets/fig_curves_dark.svg"></div>
+<div class="vizcard reveal"><div class="vizhead"><b>Measured against DFN at four rates</b><span class="legend"><span><i style="background:var(--c-cyan)"></i>C/10</span><span><i style="background:var(--c-green)"></i>C/5</span><span><i style="background:var(--c-warm)"></i>C/2</span><span><i style="background:var(--c-rose)"></i>2C</span></span></div><div class="viz" data-viz="curves" role="img" aria-label="Four 3D ribbons of measured discharge voltage against capacity at C/10, C/5, C/2 and 2C, each with the DFN model threaded through it as a line"><img class="fallback" alt="" data-viz-fig="viz_curves" loading="lazy"></div><div class="vizfoot">Ribbons: measured. Lines: DFN. C/5 and C/2 were used for the fit, C/10 is a low-rate check, 2C is the blind prediction. Hover a ribbon for the point and the capacity comparison.</div></div>
 <div class="tablewrap reveal"><table id="valTable"><thead><tr><th>Rate</th><th>Role</th><th class="num">Q meas / model (mAh)</th><th class="num">ΔV̄ (mV)</th><th class="num">V-Q RMSE (mV)</th></tr></thead><tbody></tbody></table>
-<p class="note">The 2C capacity is over-predicted by 20 %: the fit on C/5 and C/2 cannot separate an instantaneous ohmic drop from a transport loss that grows with time, and it picked the ohmic explanation. That limitation is stated, measured and chased through three further model versions in the repository.</p></div>
+<p class="note">The 2C average voltage lands within 17 mV; the capacity is over-predicted by 20 % because the C/5 and C/2 curves fix the sum of the ohmic and the transport losses, and the 30 s rests then separate the two, which the later model versions build on.</p></div>
 </div>
 <div class="two" style="margin-top:34px">
 <div class="tablewrap reveal"><table id="cvTable"><thead><tr><th>Scan rate</th><th class="num">Ox. peak meas / DFN (V)</th><th class="num">Red. peak meas / DFN (V)</th><th class="num">Largest shift (mV)</th></tr></thead><tbody></tbody></table>
 <p class="note">b-values (slope of log peak current against log scan rate): measured <span id="bMeas"></span>, model <span id="bModel"></span>. Both sit between the diffusion (0.5) and surface (1.0) limits, as expected for a porous electrode.</p></div>
-<div class="card reveal"><img data-fig="fig_cv" alt="Cyclic voltammograms at 0.1, 0.2 and 0.3 mV/s: measured in cyan and DFN model in orange dashed. Peak positions agree within 80 mV." src="assets/fig_cv_dark.svg"></div>
+<div class="vizcard reveal"><div class="vizhead"><b>Cyclic voltammetry, never fitted</b><span class="legend"><span><i style="background:var(--c-cyan)"></i>0.1</span><span><i style="background:var(--c-green)"></i>0.2</span><span><i style="background:var(--c-warm)"></i>0.3 mV/s</span></span></div><div class="viz" data-viz="cv" role="img" aria-label="Three 3D ribbons of measured current against potential at 0.1, 0.2 and 0.3 millivolts per second with the DFN model as a line through each; peak positions agree within 80 mV"><img class="fallback" alt="" data-viz-fig="viz_cv" loading="lazy"></div><div class="vizfoot">The model is driven by the measured voltage programme; all six peak potentials sit within 80 mV of the measurement. Hover for the peak comparison.</div></div>
 </div>
 </div></section>
 
 <section class="story" id="loss"><div class="wrap">
 <div class="eyebrow reveal">03 · Where the 2C voltage goes</div>
-<h2 class="reveal">The model names the loss. The rests say part of the name is wrong.</h2>
+<h2 class="reveal">The model names the loss. The rests measure its ohmic part independently.</h2>
 <p class="lead reveal">PyBaMM's voltage-component variables close to the terminal voltage to better than a microvolt, so the 374 mV capacity-weighted mean loss on the 2C discharge can be split by mechanism. Then the 30 s rests after every step, read straight from the raw files, give a model-free check on the ohmic part.</p>
 <div class="sticky-wrap">
 <div class="sticky-fig">
@@ -105,14 +106,14 @@ tr.hl td{font-weight:700}
 <div class="bar" aria-hidden="true"><span class="o" id="bO"></span><span class="r" id="bR"></span><span class="d" id="bD"></span><span class="e" id="bE"></span></div>
 <div class="keys"><div><i style="background:var(--c2c)"></i>contact / ohmic <b id="kO">0 %</b></div><div><i style="background:var(--c2)"></i>charge transfer <b id="kR">0 %</b></div><div><i style="background:var(--c5)"></i>particle diffusion <b id="kD">0 %</b></div><div><i style="background:var(--c10)"></i>electrolyte <b id="kE">0 %</b></div></div>
 <div class="rbox" id="rbox" style="display:none"><div><b id="rJump">72 Ω</b><span>instantaneous resistance from the post-charge rests, C/10 to C/2 (2C post-hoc: 74 Ω)</span></div><div><b id="rFit">97 Ω</b><span>contact resistance the curve-only fit needed (leave-one-out 81 to 122 Ω)</span></div></div>
-<img data-fig="fig_overpotential" style="width:100%;margin-top:16px;display:block" alt="Stacked area chart of the DFN voltage-loss components along the 2C discharge: contact and ohmic resistance dominates, then charge transfer, then particle diffusion." src="assets/fig_overpotential_dark.svg">
+<div class="viz" data-viz="loss" style="margin-top:16px" role="img" aria-label="Four 3D ribbons of the DFN voltage-loss components along the 2C discharge: contact and ohmic resistance, charge transfer, particle diffusion and electrolyte, in millivolts against capacity"><img class="fallback" alt="" data-viz-fig="viz_loss" loading="lazy"></div>
 </div>
 <div class="steps" id="steps">
 <div class="step active" data-step="0"><h3>74 % ohmic and contact resistance</h3><p>A lumped resistance of 97 Ω carries most of the loss: current-collector contact, separator and the lithium-metal interphase, all in one number.</p></div>
 <div class="step" data-step="1"><h3>17 % charge transfer</h3><p>Butler-Volmer kinetics with the fitted rate constant. The log-parameters k and R_contact are correlated at 0.94, so the data split these two losses only weakly.</p></div>
 <div class="step" data-step="2"><h3>6 % solid-state diffusion, 3 % electrolyte</h3><p>Diffusion in 5 µm particles with the fitted time constant R²/D of about 2,200 s. At the 3.5 V cut-off the particles' bulk open-circuit voltage is still 3.95 V: 0.15 mAh of lithium the model could not deliver at that rate.</p></div>
-<div class="step" data-step="3"><h3>The rests disagree: 72 Ω, not 97 Ω</h3><p>The voltage jump 48 ms after every current interruption gives the instantaneous resistance model-free. After charge it is 72 Ω at every rate from C/10 to 2C. The curve-only fit assigned too much loss to resistance, and the relaxation that follows is linear in log(time), which a model with one particle size and no double layer cannot produce.</p></div>
-<div class="step" data-step="4"><h3>Give the model a double layer: rest misfit 40 → 15 mV</h3><p>Adding double-layer capacitance (one PyBaMM option, one extra parameter) lets the same training data fit the rests to 15 mV instead of 40 mV, with the contact resistance at 89 Ω. It does not improve the blind 2C capacity, and the repository says so, version by version, down to a tested side-reaction submodel.</p></div>
+<div class="step" data-step="3"><h3>The rests measure it: 72 Ω against the fitted 97 Ω</h3><p>The voltage jump 48 ms after every current interruption gives the instantaneous resistance model-free. After charge it is 72 Ω at every rate from C/10 to 2C, which pins the ohmic part of the loss independently of the fit; the relaxation that follows is linear in log(time), the signature of the double-layer physics the next version adds.</p></div>
+<div class="step" data-step="4"><h3>Give the model a double layer: rest misfit 40 → 15 mV</h3><p>Adding double-layer capacitance (one PyBaMM option, one extra parameter) lets the same training data fit the rests to 15 mV instead of 40 mV, with the contact resistance at 89 Ω, in line with the rests. Every version is tested and reported in the repository, down to a side-reaction submodel that reproduces the first-cycle coulombic efficiency.</p></div>
 </div></div>
 </div></section>
 
@@ -129,7 +130,7 @@ python scripts/run_all.py --fast # SPMe only, a few minutes; omit --fast for the
 python docs/build_assets.py      # this page's data and figures</code></pre>
 <div class="two" style="margin-top:28px">
 <div class="card reveal"><b>Cite</b><p class="note">S. Kavathekar, <i>LiMn₂O₄ half cell: a physics-based PyBaMM rate model fitted to measured galvanostatic data</i>, MSE 5550 project, University of Pennsylvania, 2026. github.com/Soham-ChemE/LMO-Cathode-Rate-Model-PyBaMM</p></div>
-<div class="card reveal"><b>Scope</b><p class="note">One cell, one cycle per rate, measured in sequence, so slow drift is folded into the fitted parameters. The electrode area was never entered in EC-Lab; it is derived from capacity and the headline uses the only disc size that gives a physically plausible coating. Nothing was tuned on the 2C or CV data.</p></div>
+<div class="card reveal"><b>Scope and assumptions</b><p class="note">One cell measured in sequence, one cycle per rate; the electrode area is derived from capacity with the disc size that gives a physically consistent coating; nothing was tuned on the 2C or CV data.</p></div>
 </div>
 </div></section>
 
@@ -150,7 +151,7 @@ document.addEventListener('siteready',()=>{
     document.getElementById('rbox').style.display=i>=3?'grid':'none';
     document.getElementById('sfTitle').textContent=i===4?`Rest misfit: v2 ${S.v2_rest_rmse_mV} mV → v2.1 (double layer) ${S.v21_rest_rmse_mV} mV`:i===3?'Model-free check from the 30 s rests':`Capacity-weighted mean voltage loss at 2C: ${S.two_c_mean_loss_mV} mV`;
     document.getElementById('sfSub').textContent=i===4?`R_contact ${S.v21_R_contact} Ω with double layer; still above the ${S.rest_after_charge_ohm} Ω jump`:i===3?`jump at 48 ms divided by current, cycle 1, after charge`:'DFN v1, 10 mm disc'}
-  window.SITE.steps('.step',k=>setStep(+k));
+  window.SITE.steps('.step',k=>{document.dispatchEvent(new CustomEvent('lmo-step',{detail:k}));setStep(+k)});
 });
 </script>
 </body>

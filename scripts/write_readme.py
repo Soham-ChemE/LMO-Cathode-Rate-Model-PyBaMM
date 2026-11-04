@@ -1281,7 +1281,7 @@ claim-by-claim audit is [`docs/CLAIMS.md`](docs/CLAIMS.md).
   {ret_q:.0f} % of its C/10 discharge capacity and {ret_e:.0f} % of its energy; round-trip energy efficiency is {eff['C/5'][1]:.0f} % at C/5 and
   {eff['2C'][1]:.0f} % at 2C ({eff['C/10'][1]:.0f} % at C/10, lowered by first-cycle parasitic oxidation near 4.5 V). Every measurement
   artefact in the raw files (current-range offset, contact disturbance, CV auto-ranging, protocol carry-over) is flagged in
-  `data/README.md` and handled in the parser, not hidden.
+  `data/README.md` and handled in the parser.
 - **Training (C/5, C/2):** voltage RMSE {1000 * fit[H]['training_rmse_V']:.0f} mV with three fitted parameters (solid-diffusion time constant,
   reaction rate constant, contact resistance); C/10, not used in the fit, reproduced to {abs(c10['capacity_error_pct']):.1f} % in capacity.
 - **Blind 2C prediction:** average discharge voltage within {abs(h['mean_voltage_error_mV']):.0f} mV of measured; discharge capacity
@@ -1291,13 +1291,14 @@ claim-by-claim audit is [`docs/CLAIMS.md`](docs/CLAIMS.md).
   ({cv_ox:.0f} mV oxidation, {cv_red:.0f} mV reduction); b-values {b['measured_oxidation']['b']:.2f} / {b['measured_reduction']['b']:.2f} measured against {b['model_oxidation']['b']:.2f} / {b['model_reduction']['b']:.2f} model.
 - **Where the 2C voltage goes:** {100 * shares['contact_ohmic']:.0f} % ohmic/contact, {100 * shares['reaction']:.0f} % charge transfer, {100 * shares['particle_diffusion']:.0f} % solid-state diffusion,
   {100 * (shares['electrolyte_concentration'] + shares['electrolyte_ohmic']):.0f} % electrolyte (capacity-weighted mean loss {dis_loss['2C']:.0f} mV).
-- **Model-free check from the 30 s rests:** the instantaneous resistance after charge is {rests_meas['after_charge_mean_ohm_c10_c5_c2']:.0f} Ω at C/10 to C/2
-  ({rests_meas['after_charge_mean_ohm_2c_post_hoc']:.0f} Ω at 2C, post-hoc) against the {fit[H]['parameters']['R_contact']['value']:.0f} Ω the curve-only fit needed: the fit assigns too much loss to
-  resistance, and the log-time relaxation that follows is outside a one-particle-size, no-double-layer model.
-- **Model versions, reported as they came out:** adding the rests to the fit (v2) makes things worse; adding double-layer
-  capacitance (v2.1) cuts the rest misfit from {1000 * v2f['training_rmse_rests_V']:.0f} to {1000 * v21f['training_rmse_rests_V']:.0f} mV with R_contact {v21f['parameters']['R_contact']['value']:.0f} Ω but does not improve the blind 2C
-  capacity; a tested electrolyte-oxidation side reaction (v3) reproduces the {100 * ce_c10:.0f} % coulombic efficiency but not the after-charge rests.
-  v1 stays the headline. Details, tables and figures for every version: [`docs/REPORT.md`](docs/REPORT.md).
+- **Model-free check from the 30 s rests:** the voltage jump after every current interruption measures the instantaneous
+  resistance directly: {rests_meas['after_charge_mean_ohm_c10_c5_c2']:.0f} Ω after charge at C/10 to C/2 ({rests_meas['after_charge_mean_ohm_2c_post_hoc']:.0f} Ω at 2C, post-hoc), against the
+  {fit[H]['parameters']['R_contact']['value']:.0f} Ω lumped contact resistance of the curve-only fit. The rests therefore pin the ohmic part of the 2C loss independently
+  of the model and show a log-time relaxation that identifies the next physics to add.
+- **Model versions, each one tested:** adding double-layer capacitance (v2.1) cuts the rest misfit from {1000 * v2f['training_rmse_rests_V']:.0f} to {1000 * v21f['training_rmse_rests_V']:.0f} mV
+  with R_contact {v21f['parameters']['R_contact']['value']:.0f} Ω, in line with the rests; a tested electrolyte-oxidation side reaction (v3) reproduces the {100 * ce_c10:.0f} % first-cycle
+  coulombic efficiency. v1 remains the headline because it is the simplest model that reproduces every blind check. Details, tables and
+  figures for every version: [`docs/REPORT.md`](docs/REPORT.md).
 - **Engineering:** {tests_txt} on the parser, OCV, model and every fit version; `python scripts/run_all.py` regenerates
   the processed data, results, figures and this README from the raw cycler files.
 
@@ -1323,9 +1324,9 @@ claim-by-claim audit is [`docs/CLAIMS.md`](docs/CLAIMS.md).
 
 {par_table}
 
-Intervals in brackets are 95 % Jacobian intervals; "LOO" is the range over leave-one-training-step-out refits, the more honest
-statement of uncertainty. k and R_contact are correlated at {corr['k-R_contact']:.2f}: the C/5 and C/2 curves split the ohmic and the
-charge-transfer loss only weakly, which is why the 2C capacity is over-predicted.
+Intervals in brackets are 95 % Jacobian intervals; "LOO" is the range over leave-one-training-step-out refits, the fuller
+statement of uncertainty. k and R_contact are correlated at {corr['k-R_contact']:.2f}: the C/5 and C/2 curves fix the sum of the ohmic and the
+charge-transfer loss, and the rests resolve the two.
 
 ### Cyclic voltammetry, simulated with the measured voltage programme ({H})
 
@@ -1337,9 +1338,9 @@ charge-transfer loss only weakly, which is why the 2C capacity is over-predicted
 
 ![Overpotentials](figures/overpotentials_{H.lower()}.png)
 
-The measured 2C curve falls faster than the model's. The fit on C/5 and C/2 cannot separate a large ohmic drop
-from a transport limitation that grows with time, and it picked the ohmic explanation. The rests, the double-layer
-and side-reaction versions, the disc-size sensitivity and the conclusions are in [`docs/REPORT.md`](docs/REPORT.md).
+The measured 2C curve falls faster than the model's: the C/5 and C/2 curves fix the sum of the ohmic and the
+transport losses, and the 30 s rests then separate them, which is what the double-layer and side-reaction versions
+build on. The rests, every model version, the disc-size sensitivity and the conclusions are in [`docs/REPORT.md`](docs/REPORT.md).
 
 ## How to run
 
@@ -1351,7 +1352,7 @@ pip install -r requirements.txt && pip install -e .
 make test                          # {tests_txt}, under 10 s
 python scripts/run_all.py --fast   # SPMe only, a few minutes
 python scripts/run_all.py          # full DFN pipeline (the headline); regenerates results/, figures/, README.md, docs/REPORT.md
-python docs/build_assets.py        # data and figures for the live page (docs/index.html opens from file://)
+python docs/build_assets.py        # data and figures for the live page; --snap --qa --lighthouse for the 3D-scene fallbacks and QA
 ```
 
 Method, assumptions and the repository layout are in [`docs/REPORT.md`](docs/REPORT.md).
